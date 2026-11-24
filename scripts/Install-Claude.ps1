@@ -4,7 +4,7 @@
   your machine's execution policy is NOT changed).
 
   What it does:
-    1. Checks Windows, Python 3.11+ and Google Chrome (offers official winget installs if missing; asks first).
+    1. Checks Windows, Python 3.12 and Google Chrome (offers official winget installs if missing; asks first).
     2. Creates a private virtual environment in %LOCALAPPDATA%\ClaudeMeetAgent\venv.
     3. Installs pinned, hash-verified dependencies from requirements-windows.lock.
     4. Optionally creates Desktop/Start Menu shortcuts.
@@ -36,18 +36,18 @@ if ($ramGB -lt 7.5) { Say "Warning: less than 8 GB RAM. Close heavy apps during 
 
 # --- Python ---
 function Find-Python {
-  foreach ($cand in @("py -3.12", "py -3.13", "py -3.11", "python")) {
+  foreach ($cand in @("py -3.12", "python")) {
     try {
       $parts = $cand.Split(" ")
       $v = & $parts[0] $parts[1..9] -c "import sys;print('%d.%d' % sys.version_info[:2])" 2>$null
-      if ($LASTEXITCODE -eq 0 -and $v -match '^3\.(1[1-9])$') { return $cand }
+      if ($LASTEXITCODE -eq 0 -and $v -eq '3.12') { return $cand }   # lockfile is compiled for 3.12
     } catch {}
   }
   return $null
 }
 $py = Find-Python
 if (-not $py) {
-  Say "Python 3.11+ was not found." Yellow
+  Say "Python 3.12 was not found (the pinned lockfile targets 3.12; other versions are ignored)." Yellow
   if (Ask "Install Python 3.12 for your user only with winget (official Microsoft package manager)?") {
     winget install --id Python.Python.3.12 --scope user --accept-package-agreements --accept-source-agreements
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")

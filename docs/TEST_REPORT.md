@@ -32,6 +32,14 @@ python scripts/benchmark.py
 | test_meet_lifecycle_mock (join → admit → consent → newcomer → opt-out → leave; removal; busy) | 3 | pass | real Chromium, **mock Meet page** |
 | test_vad_pcm, test_privacy | 6 | pass | unit |
 
+## Owner PC install trial (2026-11-24, Windows 11 Pro build 26200, i5-8400, 8 GB RAM)
+Run remotely and by hand: the installer's ExecutionPolicy step was blocked by the remote tool's guard, and the venv was built on F: in a test folder.
+- Python 3.11 failed with `No matching distribution found for numpy==2.5.5` because the lock targets 3.12. **Fixed:** the installer now requires 3.12.
+- With Python 3.12.10 (per-user winget): the hash-checked install succeeded (venv 237 MB). Doctor exited 0 (only the Gemini key was unset). The Control Center
+  returned HTTP 200 in 3.9 s at about 69 MB working set. `stop` shut it down cleanly and freed the port.
+- Observed constraints: 0.8 GB RAM free at test time, and 1.24 GB free on C:.
+- Not done yet: `Install-Claude.cmd` run by the owner from Explorer, real Meet, Gemini.
+
 ## Measurements (Linux container, not the target PC)
 | Metric | Value |
 |---|---|

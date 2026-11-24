@@ -47,7 +47,7 @@ def doctor(as_json: bool = False) -> int:
     def add(name, ok, detail, fix=""):
         checks.append({"check": name, "ok": ok, "detail": detail, "fix": fix})
 
-    add("Python", sys.version_info >= (3, 11), platform.python_version(), "Install Python 3.12 from python.org")
+    add("Python", sys.version_info[:2] >= (3, 12), platform.python_version(), "Install Python 3.12 (the Windows lockfile targets 3.12)")
     add("OS", True, f"{platform.system()} {platform.release()} ({platform.version()})")
     add("CPU", True, f"{platform.processor() or platform.machine()}, {psutil.cpu_count(logical=False)} cores / "
                      f"{psutil.cpu_count()} threads")
