@@ -1,5 +1,5 @@
-// Claude Meet bridge. Injected into Claude's OWN dedicated browser profile only.
-// - Replaces the microphone with an in-page audio stream that carries Claude's voice
+// Claumeet Meet bridge. Injected into Claumeet's OWN dedicated browser profile only.
+// - Replaces the microphone with an in-page audio stream that carries Claumeet's voice
 //   (the physical microphone is never opened; camera requests are refused -> camera stays off).
 // - Captures ONLY remote meeting audio (WebRTC remote tracks), downsampled to 16 kHz PCM.
 // - Observes the DOM for chat messages and participants (read-only) and reports to Python.
@@ -81,7 +81,7 @@
   // ---- Microphone replacement; camera refused ----
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia = async (c) => {
-      if (c && c.video && !c.audio) throw new DOMException("Camera disabled for Claude", "NotAllowedError");
+      if (c && c.video && !c.audio) throw new DOMException("Camera disabled for Claumeet", "NotAllowedError");
       if (c && c.audio) {
         ensure();
         return new MediaStream([micDest.stream.getAudioTracks()[0].clone()]);
@@ -90,7 +90,7 @@
     };
   }
 
-  // ---- Claude's voice output ----
+  // ---- Claumeet's voice output ----
   B.setGen = (g) => { B.gen = g; };
   B.play = (b64, rate, gen) => {
     if (gen !== B.gen) { B.stats.droppedStale++; return -1; }

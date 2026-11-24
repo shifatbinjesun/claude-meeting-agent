@@ -1,6 +1,6 @@
 """Real browser integration test of meet/bridge.js (Chromium + WebRTC loopback, no Google services).
 
-Verifies: remote-audio-only capture at 16 kHz, Claude's voice reaches the page microphone, stale
+Verifies: remote-audio-only capture at 16 kHz, Claumeet's voice reaches the page microphone, stale
 generations are discarded, flush stops audio quickly, and camera requests are refused.
 """
 import asyncio

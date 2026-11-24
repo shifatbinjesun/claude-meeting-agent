@@ -65,12 +65,12 @@ async def test_full_lifecycle(sup):
     assert sup.state.state == S.DEGRADED            # honest: no AI provider configured
     await asyncio.sleep(1.2)
     msgs = await sup.browser.page.evaluate("[...document.querySelectorAll('[data-message-id]')].map(e=>e.textContent)")
-    assert any("Claude (AI)" in m for m in msgs), "AI disclosure must be posted in chat"
+    assert any("Claumeet (AI)" in m for m in msgs), "AI disclosure must be posted in chat"
     # A newcomer joins -> consent pending for them until notified.
     await sup.browser.page.evaluate("fake.join('p2', 'Nadia')")
     await wait_for(lambda: "p2" in sup.participants)
     # Chat opt-out pauses processing.
-    await sup.browser.page.evaluate("fake.addMsg('Nadia', 'Claude please stop listening')")
+    await sup.browser.page.evaluate("fake.addMsg('Nadia', 'Claumeet please stop listening')")
     await wait_for(lambda: sup.state.controls.processing_paused)
     assert sup.state.state == S.PAUSED
     # Owner leaves via the trusted command path.

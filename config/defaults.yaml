@@ -1,12 +1,12 @@
-# Claude Meet Agent default configuration. Copy keys you want to change into
+# Claumeet default configuration. Copy keys you want to change into
 # %LOCALAPPDATA%\ClaudeMeetAgent\config.yaml (user overrides). Never put secrets here.
 version: 1
 timezone: Asia/Dhaka
 
 identity:
-  display_name: "Claude (AI)"
+  display_name: "Claumeet (AI)"
   # Name variants the agent answers to (Bangla + transliterations + common ASR spellings).
-  name_variants: ["claude", "clyde", "cloud", "claud", "klod", "ক্লড", "ক্লাউড", "ক্লোড", "ক্লদ"]
+  name_variants: ["claumeet", "claumit", "klaumeet", "klaumit", "clomeet", "clau meet", "claw meet", "clo meet", "cloud meet", "claude meet", "clau mit", "claude", "ক্লমিট", "ক্লামিট", "ক্লাউমিট", "ক্লমীট", "ক্লামীট", "ক্লো মিট", "ক্লাউড মিট", "ক্লড"]
 
 dashboard:
   host: 127.0.0.1        # loopback only by default. LAN access is opt-in (see docs/SECURITY.md).

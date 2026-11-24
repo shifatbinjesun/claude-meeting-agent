@@ -165,3 +165,14 @@ def test_schedule_add_validates(env):
     assert r["ok"]
     listed = c.get("/api/schedules").json()["schedules"]
     assert listed[0]["url"] == "meet.google.com/…"   # link not exposed back
+
+
+def test_setup_wizard_flow(env):
+    sup, c = env
+    h = paired(sup, c)
+    st = c.get("/api/setup").json()
+    assert st["complete"] is False and [s["id"] for s in st["steps"]] == ["google", "key", "probe"]
+    assert c.post("/api/setup/mark", json={"google_signed_in": True, "evil": True}, headers=h).json()["ok"]
+    st = c.get("/api/setup").json()
+    assert st["steps"][0]["done"] is True
+    assert c.post("/api/setup/mark", json={"dismissed": True}, headers={"Origin": ORIGIN}).status_code == 403

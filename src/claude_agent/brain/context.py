@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 @dataclass
 class Line:
     ts: float
-    speaker: str          # "Claude", a display name, or "Meeting audio" when unattributed
+    speaker: str          # "Claumeet", a display name, or "Meeting audio" when unattributed
     text: str
     channel: str          # voice | chat
     confidence: float = 0.0

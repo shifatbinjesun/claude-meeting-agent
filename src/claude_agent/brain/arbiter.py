@@ -39,7 +39,7 @@ class ArbiterState:
     last_question: float = 0.0
     last_claude_turn_end: float = 0.0
     consecutive: int = 0
-    silenced: bool = False             # someone asked Claude to be quiet (owner can lift)
+    silenced: bool = False             # someone asked Claumeet to be quiet (owner can lift)
     owner_silenced: bool = False
     pending_greetings: list[str] = field(default_factory=list)
     greeted: set[str] = field(default_factory=set)

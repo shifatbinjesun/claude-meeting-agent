@@ -1,12 +1,12 @@
-# Claude Meeting Agent
+# Claumeet
 
 An open-source, **openly identified** AI participant for Google Meet. It acts like a witty, warm
 Bangladeshi friend (Bangla, Dhakaiya, Banglish and English) and works as your second brain in the call.
 It runs on your own Windows PC, uses **free-tier AI only**, and you control it from a local
-**Claude Control Center** dashboard.
+**Claumeet Control Center** dashboard.
 
 > Community project. Not affiliated with Anthropic or Google. The in-meeting voice and reasoning run on
-> Google's Gemini API free tier. "Claude" is only the participant's name, and it always says it is an AI.
+> Google's Gemini API free tier. "Claumeet" is only the participant's name, and it always says it is an AI.
 
 ## What it does
 
@@ -19,19 +19,39 @@ It runs on your own Windows PC, uses **free-tier AI only**, and you control it f
 | Consent first | It processes nothing until the AI disclosure is given. It posts a bilingual disclosure in chat. Anyone can say or type "stop listening" to pause it. Late joiners are informed. |
 | Second brain | Local SQLite + FTS5 memory split into public, owner-private and consented-participant domains. It can ingest documents (txt/md/csv/json) and look up public facts on Wikipedia with sources. |
 | Control Center | Overview, Live Meeting, Owner Channel (private Q&A), Personality Studio, Memory & Knowledge, Scheduling, Provider & Performance, Security & Privacy. Emergency stop: **Ctrl+Shift+X**. |
-| One-click Windows | `Install-Claude.cmd`, `Start-Claude.cmd`, `Stop-Claude.cmd`, `SignIn-Claude.cmd`, `Doctor-Claude.cmd`. |
+| One-click Windows | `ClaumeetSetup.exe` installer with a guided setup checklist, plus `Install/Start/Stop/SignIn/Doctor-Claumeet.cmd`. |
 
-## Quick start (Windows 10/11)
+## Install (Windows 10/11): the easy way
 
-1. **Download** this repository (Code → Download ZIP) and extract it, for example to `C:\ClaudeMeetingAgent`.
-2. Double-click **`Install-Claude.cmd`**. It checks for Python 3.12 and Chrome and offers to install them with winget (it asks first). Then it sets up a private environment and runs a health check.
-3. Create a **separate Google account** for the bot and name it something like "Claude (AI)". Double-click **`SignIn-Claude.cmd`** and sign that account in through Google's normal page. You only do this once.
-4. Get a **free Gemini API key** at <https://aistudio.google.com/apikey>. Leave billing **off** on its project.
-5. Double-click **`Start-Claude.cmd`**. Your browser opens the Control Center (paired automatically through a one-time link). Go to **Provider & Performance**, paste the key, then click **Probe free models**.
-6. Go to **Overview**, paste a Meet link and click **Join**. Claude's Chrome window opens. Click **Ask to join** there, and the host admits Claude.
-7. After you've told the meeting about the AI, click **Announce & start listening**. Claude posts the disclosure in chat, introduces itself and starts listening.
+1. Open the [latest release](https://github.com/shifatbinjesun/claude-meeting-agent/releases/latest) and download **`ClaumeetSetup.exe`**.
+2. Double-click it. It installs for your user only, so it needs **no admin rights** and installs **no drivers**.
+   Before it starts it shows you exactly what Claumeet needs and where to get it:
+   - **Python 3.12** and **Google Chrome**. If they are missing, the installer offers to install them with Windows' own `winget`.
+   - A **separate Google account** for the bot, named something like "Claumeet (AI)" (free, <https://accounts.google.com/signup>).
+   - A **free Gemini API key** (<https://aistudio.google.com/apikey>). Leave billing **off**. Claumeet only uses free-tier models.
+3. When setup finishes, the **Claumeet Control Center** opens in your browser. A setup checklist at the top walks you
+   through signing in the bot account, pasting the key and testing it. The key is stored in Windows Credential Manager, never in a file.
+4. Paste a Meet link on **Overview** and click **Join**. Click **Ask to join** in Claumeet's Chrome window, and the host admits it.
+5. After you've told everyone an AI is joining, click **Announce & start listening**.
 
-Stop at any time with **Emergency stop** (or Ctrl+Shift+X). Close the meeting with **Leave meeting**, and shut everything down with `Stop-Claude.cmd`.
+Stop at any time with **Emergency stop** (or Ctrl+Shift+X). Use the **Stop Claumeet** shortcut to shut it down. Uninstall it from
+Windows **Settings → Apps** like any other program.
+
+### Is the installer safe?
+
+No installer can promise "100% safe", so here is what you can check yourself:
+- The code is open source, and `ClaumeetSetup.exe` is built from it by a **public GitHub Actions run** ([release workflow](.github/workflows/release.yml)). That run also installs, starts and uninstalls the app as a test.
+- Each release lists the **SHA-256** of the exe. Check it with `Get-FileHash .\ClaumeetSetup.exe` in PowerShell.
+- The exe is **not code-signed** (a certificate costs money). Windows SmartScreen may say "Windows protected your PC".
+  Click **More info → Run anyway** only if you downloaded it from the release page above.
+- Python packages are installed from a **hash-pinned lock file**, so a tampered package fails to install.
+- It never turns on paid APIs, never bypasses Google sign-in or Meet admission, and keeps no audio recordings.
+
+### Other ways to install
+- **No exe:** download [`Setup-Claumeet.cmd`](Setup-Claumeet.cmd) and double-click it. It downloads this repository to
+  `%USERPROFILE%\ClaudeMeetingAgent` and runs the same installer.
+- **From source:** Code → Download ZIP, extract, double-click **`Install-Claumeet.cmd`**. Then use **`Start-Claumeet.cmd`**,
+  **`Stop-Claumeet.cmd`**, **`SignIn-Claumeet.cmd`** and **`Doctor-Claumeet.cmd`**.
 
 ## Honest status
 

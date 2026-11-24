@@ -1,4 +1,4 @@
-// Claude Control Center frontend. Vanilla JS. All untrusted text is rendered with textContent.
+// Claumeet Control Center frontend. Vanilla JS. All untrusted text is rendered with textContent.
 "use strict";
 (() => {
   let CSRF = null;
@@ -26,7 +26,7 @@
   async function boot() {
     const s = await fetch("/api/session", { credentials: "same-origin" }).then((r) => r.json());
     if (!s.authenticated) return showLogin();
-    CSRF = s.csrf; showApp(); bindUI(); connectWS(); refreshAll();
+    CSRF = s.csrf; showApp(); bindUI(); bindWizard(); connectWS(); refreshAll(); loadWizard();
     setInterval(refreshLive, 3000);
   }
 
@@ -52,11 +52,11 @@
     $("#estop").addEventListener("click", estop);
     document.addEventListener("keydown", (e) => { if (e.ctrlKey && e.shiftKey && (e.key === "X" || e.key === "x")) { e.preventDefault(); estop(); } });
     $("#join-form").addEventListener("submit", async (e) => { e.preventDefault();
-      try { const r = await post("/api/join", { url: $("#join-url").value }); toast(r.ok ? "Opening Claude's browser… click 'Ask to join' there." : "Not joined: " + (r.reason || ""), !r.ok); } catch (err) { toast(err.message, true); } });
-    $("#consent-btn").addEventListener("click", async () => { const r = await post("/api/consent/grant"); toast(r.ok ? "Disclosure posted. Claude is listening." : "Not started: " + r.reason, !r.ok); });
+      try { const r = await post("/api/join", { url: $("#join-url").value }); toast(r.ok ? "Opening Claumeet's browser… click 'Ask to join' there." : "Not joined: " + (r.reason || ""), !r.ok); } catch (err) { toast(err.message, true); } });
+    $("#consent-btn").addEventListener("click", async () => { const r = await post("/api/consent/grant"); toast(r.ok ? "Disclosure posted. Claumeet is listening." : "Not started: " + r.reason, !r.ok); });
     $("#ask-form").addEventListener("submit", async (e) => { e.preventDefault(); const t = $("#ask-text").value.trim(); if (!t) return;
       addOwnerReply("You", t); $("#ask-text").value = "";
-      try { const r = await post("/api/owner/ask", { text: t }); addOwnerReply("Claude (private)", r.ok ? r.text : "Unavailable: " + r.reason); } catch (err) { addOwnerReply("Error", err.message); } });
+      try { const r = await post("/api/owner/ask", { text: t }); addOwnerReply("Claumeet (private)", r.ok ? r.text : "Unavailable: " + r.reason); } catch (err) { addOwnerReply("Error", err.message); } });
     $("#say-form").addEventListener("submit", async (e) => { e.preventDefault(); const r = await cmd("speak", { text: $("#say-text").value }); if (r && r.ok) $("#say-text").value = ""; });
     $("#chat-form").addEventListener("submit", async (e) => { e.preventDefault(); const r = await cmd("chat_send", { text: $("#chat-text").value }); if (r && r.ok) $("#chat-text").value = ""; });
     $("#aud-form").addEventListener("submit", audition);
@@ -87,10 +87,10 @@
     try { const r = await post("/api/command", { kind, payload: payload || {} });
       if (r.needs_confirmation) toast("Needs your confirmation in Approvals.");
       else if (!r.ok) toast(`${kind}: ${r.reason || "failed"}`, true);
-      else if (r.text) addOwnerReply("Claude (private)", r.text);
+      else if (r.text) addOwnerReply("Claumeet (private)", r.text);
       return r; } catch (err) { toast(err.message, true); }
   }
-  async function estop() { const r = await cmd("emergency_stop"); if (r && r.ok) toast(`Emergency stop: audio flushed in ${r.flush_ms} ms. Claude is muted and paused.`); }
+  async function estop() { const r = await cmd("emergency_stop"); if (r && r.ok) toast(`Emergency stop: audio flushed in ${r.flush_ms} ms. Claumeet is muted and paused.`); }
 
   // ---------- live updates ----------
   function connectWS() {
@@ -101,7 +101,7 @@
   function onEvent(ev) {
     if (ev.kind === "status") return renderStatus(ev.data);
     if (ev.kind === "owner_hint") toast(ev.data.text);
-    if (ev.kind === "owner_reply" || ev.kind === "vision") addOwnerReply("Claude (private)", ev.data.text);
+    if (ev.kind === "owner_reply" || ev.kind === "vision") addOwnerReply("Claumeet (private)", ev.data.text);
     if (ev.kind === "transcript") addLine("#transcript", ev.data.speaker, ev.data.text, ev.ts);
     if (ev.kind === "chat") addLine("#chat", ev.data.sender, ev.data.text, ev.ts);
     if (ev.kind === "decision") addDecision(ev.data);
@@ -110,7 +110,7 @@
   }
   function addLine(sel, who, text, ts) {
     const box = $(sel); const d = el("div");
-    d.append(el("span", "muted small", fmtTime(ts) + " "), el("span", who === "Claude" ? "claude" : "who", who + ": "), el("span", "", text));
+    d.append(el("span", "muted small", fmtTime(ts) + " "), el("span", who === "Claumeet" ? "claude" : "who", who + ": "), el("span", "", text));
     box.append(d); while (box.children.length > 300) box.firstChild.remove(); box.scrollTop = box.scrollHeight;
   }
   function addDecision(d) {
@@ -130,7 +130,7 @@
     $("#consent-btn").disabled = !["consent_pending", "paused"].includes(s.state);
     const inMeeting = !["idle", "ended", "failed"].includes(s.state);
     document.querySelectorAll("#tab-overview [data-cmd], #tab-owner [data-cmd], #say-form button, #chat-form button").forEach((b) => {
-      b.disabled = !inMeeting; b.title = inMeeting ? "" : "Available while Claude is in a meeting"; });
+      b.disabled = !inMeeting; b.title = inMeeting ? "" : "Available while Claumeet is in a meeting"; });
     const r = s.resources || {};
     kv("#ov-kv", { Meeting: s.meeting || "none", "In meeting for": s.meeting_uptime ? Math.round(s.meeting_uptime / 60) + " min" : "—",
       Provider: s.provider.status, "Live model": s.provider.live_model, Voice: s.provider.voice, "API key": s.provider.key_configured ? "configured" : "not set",
@@ -163,6 +163,27 @@
     if ($("#tab-live").classList.contains("hidden")) return;
     const l = await api("/api/live"); const q = $("#questions"); q.replaceChildren();
     l.questions.forEach((x) => q.append(el("div", x.answered ? "muted" : "", (x.answered ? "✓ " : "• ") + x.text)));
+  }
+
+  // ---------- first-run wizard ----------
+  async function loadWizard() {
+    const w = await api("/api/setup");
+    const box = $("#wizard");
+    if (w.complete || w.dismissed) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    w.steps.forEach((st) => $("#step-" + st.id).classList.toggle("done", st.done));
+  }
+  function bindWizard() {
+    $("#wz-signin").addEventListener("click", async () => { const r = await post("/api/setup/signin"); toast(r.ok ? "Chrome opened. Sign in Claumeet's account there, then click \"I've signed in\"." : r.reason, !r.ok); });
+    $("#wz-signed").addEventListener("click", async () => { await post("/api/setup/mark", { google_signed_in: true }); loadWizard(); });
+    $("#wz-key-form").addEventListener("submit", async (e) => { e.preventDefault(); $("#wz-key-msg").textContent = "Checking the key with Google…";
+      const r = await post("/api/secrets/gemini", { key: $("#wz-key").value.trim() }); $("#wz-key").value = "";
+      $("#wz-key-msg").textContent = r.ok ? "✓ Key works and is saved." : "✗ " + r.reason + ". Copy the key again from AI Studio and paste it."; loadWizard(); });
+    $("#wz-probe").addEventListener("click", async () => { $("#wz-probe-msg").textContent = "Testing… (up to a minute)";
+      const r = await post("/api/probe"); const ok = r.results.filter((x) => x.result === "ok");
+      $("#wz-probe-msg").textContent = r.results.length ? (ok.length ? `✓ Working: ${ok.map((x) => x.model).join(", ")}` : "✗ No free model answered. Check the key, or try again in a few minutes.") : "Save your key first.";
+      loadWizard(); });
+    $("#wz-hide").addEventListener("click", async () => { await post("/api/setup/mark", { dismissed: true }); loadWizard(); });
   }
 
   // ---------- persona ----------

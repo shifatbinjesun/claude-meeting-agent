@@ -8,7 +8,7 @@ def mk(clock, **kw):
 
 def test_never_talks_over_active_speaker(clock):
     t = mk(clock)
-    t.heard("Claude, what do you think?")
+    t.heard("Claumeet, what do you think?")
     t.remote_voice(True)
     assert t.decide()[0] == Verdict.HOLD
     clock.advance(1.0)
@@ -17,7 +17,7 @@ def test_never_talks_over_active_speaker(clock):
 
 def test_held_turn_dropped_if_speaker_continues(clock):
     t = mk(clock, hold_max=3)
-    t.heard("Claude?")
+    t.heard("Claumeet?")
     held = clock.t
     for _ in range(8):
         clock.advance(0.5)
@@ -27,7 +27,7 @@ def test_held_turn_dropped_if_speaker_continues(clock):
 
 def test_direct_question_answered(clock):
     t = mk(clock)
-    t.heard("এই Claude, এইটা কী?")
+    t.heard("এই Claumeet, এইটা কী?")
     assert t.decide() == (Verdict.ALLOW, "directly_addressed")
 
 
@@ -46,7 +46,7 @@ def test_quiet_mode(clock):
     t = mk(clock, mode="quiet")
     clock.advance(100)
     assert t.decide() == (Verdict.DROP, "quiet_mode_not_addressed")
-    t.heard("Claude, তুমি বলো")
+    t.heard("Claumeet, তুমি বলো")
     assert t.decide()[0] == Verdict.ALLOW
 
 
@@ -58,17 +58,17 @@ def test_serious_mode_no_unsolicited(clock):
 
 def test_participant_stop_and_lift(clock):
     t = mk(clock)
-    t.heard("Claude, চুপ থাক")
+    t.heard("Claumeet, চুপ থাক")
     assert t.decide() == (Verdict.DROP, "participant_requested_silence")
     clock.advance(20)
-    t.heard("Claude, এখন বলো তো")
+    t.heard("Claumeet, এখন বলো তো")
     assert t.decide()[0] == Verdict.ALLOW
 
 
 def test_owner_silence_not_lifted_by_participants(clock):
     t = mk(clock)
     t.owner_silence(True)
-    t.heard("Claude, please talk")
+    t.heard("Claumeet, please talk")
     assert t.decide() == (Verdict.DROP, "owner_requested_silence")
 
 

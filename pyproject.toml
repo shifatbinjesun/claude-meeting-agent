@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-meet-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open-source, openly identified Bangladeshi AI participant for Google Meet with a local Control Center. Free-tier only, consent-first."
 readme = "README.md"
 license = { text = "MIT" }
@@ -45,3 +45,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+ignore = ["E501", "B008", "E702"]

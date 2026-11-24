@@ -1,4 +1,4 @@
-"""Ultimate Claude Control Center: local, authenticated FastAPI backend.
+"""Ultimate Claumeet Control Center: local, authenticated FastAPI backend.
 
 Security: loopback by default, Host-header allowlist (DNS-rebinding defence), one-time pairing code,
 HttpOnly SameSite=Strict session cookie, per-session CSRF header, Origin checks on every state
@@ -96,7 +96,7 @@ class ApproveBody(BaseModel):
 
 
 def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | None = None) -> FastAPI:
-    app = FastAPI(title="Claude Control Center", docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title="Claumeet Control Center", docs_url=None, redoc_url=None, openapi_url=None)
     hosts = allowed_hosts or {f"127.0.0.1:{port}", f"localhost:{port}"}
     origins = {f"http://{h}" for h in hosts} | {f"https://{h}" for h in hosts}
     limiter = RateLimiter()
@@ -198,6 +198,54 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
         sup.brain.audit("owner", "set_passphrase", "allow", "owner")
         return {"ok": True}
 
+    # ---------- first-run setup wizard ----------
+    import json as _json
+
+    from .. import paths as _paths
+    setup_file = _paths.data_dir() / "setup.json"
+
+    def setup_state() -> dict:
+        try:
+            return _json.loads(setup_file.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def save_setup(**kw) -> None:
+        st = setup_state()
+        st.update(kw)
+        setup_file.write_text(_json.dumps(st), encoding="utf-8")
+
+    @app.get("/api/setup")
+    async def setup_status(request: Request):
+        session(request, False)
+        st = setup_state()
+        probe_ok = st.get("probe_ok") or any(m["probe"] == "ok" for m in sup.registry.snapshot())
+        steps = [{"id": "google", "done": bool(st.get("google_signed_in"))},
+                 {"id": "key", "done": secrets.present(secrets.GEMINI_KEY)},
+                 {"id": "probe", "done": bool(probe_ok)}]
+        return {"steps": steps, "complete": all(x["done"] for x in steps), "dismissed": bool(st.get("dismissed")),
+                "in_meeting": sup.state.state.value not in ("idle", "ended", "failed")}
+
+    @app.post("/api/setup/signin")
+    async def setup_signin(request: Request):
+        session(request)
+        if sup.state.state.value not in ("idle", "ended", "failed"):
+            return {"ok": False, "reason": "Leave the meeting first (the browser profile is in use)."}
+        from ..meet.browser import open_signin_window
+        try:
+            open_signin_window()
+        except Exception as e:
+            return {"ok": False, "reason": str(e)[:200]}
+        sup.brain.audit("owner", "open_signin_window", "allow", "setup_wizard")
+        return {"ok": True}
+
+    @app.post("/api/setup/mark")
+    async def setup_mark(values: dict[str, bool], request: Request):
+        session(request)
+        allowed = {"google_signed_in", "dismissed"}
+        save_setup(**{k: bool(v) for k, v in values.items() if k in allowed})
+        return {"ok": True}
+
     # ---------- status / feed ----------
     @app.get("/api/status")
     async def status(request: Request):
@@ -289,7 +337,10 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
     @app.post("/api/probe")
     async def run_probe(request: Request):
         session(request)
-        return {"results": await sup.probe_providers(), "registry": sup.registry.snapshot()}
+        results = await sup.probe_providers()
+        if any(r["result"] == "ok" for r in results):
+            save_setup(probe_ok=True)
+        return {"results": results, "registry": sup.registry.snapshot()}
 
     @app.get("/api/registry")
     async def registry(request: Request):

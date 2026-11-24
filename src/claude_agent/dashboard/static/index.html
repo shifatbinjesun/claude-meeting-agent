@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude Control Center</title>
+<title>Claumeet Control Center</title>
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/app.js" defer></script>
 </head>
 <body>
 <div id="login" class="login hidden">
   <div class="card login-card">
-    <h1>Claude Control Center</h1>
-    <p class="muted">Open the pairing link shown in the Claude window on this PC, or sign in with your owner passphrase.</p>
+    <h1>Claumeet Control Center</h1>
+    <p class="muted">Open the pairing link shown in the Claumeet window on this PC, or sign in with your owner passphrase.</p>
     <form id="login-form">
       <label for="pass">Owner passphrase</label>
       <input id="pass" type="password" autocomplete="current-password" minlength="10" required>
@@ -23,7 +23,7 @@
 
 <div id="app" class="layout hidden">
   <header class="topbar">
-    <div class="brand"><span class="dot" id="state-dot"></span> Claude <span class="muted">Control Center</span></div>
+    <div class="brand"><span class="dot" id="state-dot"></span> Claumeet <span class="muted">Control Center</span></div>
     <div class="state-pill" id="state-pill" aria-live="polite">idle</div>
     <button class="btn danger" id="estop" title="Emergency stop (Ctrl+Shift+X)">■ Emergency stop</button>
   </header>
@@ -40,6 +40,40 @@
   <main class="content">
     <!-- OVERVIEW -->
     <section id="tab-overview" class="tab">
+      <div id="wizard" class="card wizard hidden">
+        <h2>Welcome to Claumeet: 3 quick setup steps</h2>
+        <p class="muted small">Everything is free. Nothing here costs money, and Claumeet never joins a meeting until you press Join.</p>
+        <ol class="steps">
+          <li id="step-google">
+            <div class="step-head"><span class="tick" aria-hidden="true"></span><b>Sign in Claumeet's own Google account</b></div>
+            <p class="small">Claumeet needs its <b>own</b> Google account so people can see it is an AI. Don't use your personal account.</p>
+            <p class="small">No account yet? <a href="https://accounts.google.com/signup" target="_blank" rel="noopener noreferrer">Create one here</a> and name it something like <b>"Claumeet (AI)"</b>.</p>
+            <div class="row wrap"><button class="btn primary" id="wz-signin">Open sign-in window</button>
+              <button class="btn" id="wz-signed">I've signed in</button></div>
+            <p class="muted small">A normal Chrome window opens. Sign in with Google's usual page, then close that window.</p>
+          </li>
+          <li id="step-key">
+            <div class="step-head"><span class="tick" aria-hidden="true"></span><b>Paste your free Gemini API key</b></div>
+            <ol class="small">
+              <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a> and sign in with any Google account.</li>
+              <li>Click <b>Create API key</b>, then <b>Copy</b>.</li>
+              <li>Paste it below. Don't add billing or a card: Claumeet only uses the free tier.</li>
+            </ol>
+            <form id="wz-key-form" class="row">
+              <input id="wz-key" type="password" autocomplete="off" placeholder="Paste API key (starts with AIza…)" minlength="20" required>
+              <button class="btn primary" type="submit">Save key</button>
+            </form>
+            <p class="muted small">The key is checked, then stored in Windows Credential Manager on this PC. It's never shown again or sent anywhere except Google.</p>
+            <p id="wz-key-msg" class="small"></p>
+          </li>
+          <li id="step-probe">
+            <div class="step-head"><span class="tick" aria-hidden="true"></span><b>Test the free AI models</b></div>
+            <div class="row"><button class="btn primary" id="wz-probe">Run test</button></div>
+            <p id="wz-probe-msg" class="small muted">Uses a few free requests to check which models your key can use.</p>
+          </li>
+        </ol>
+        <div class="row"><button class="btn" id="wz-hide">Hide this guide</button></div>
+      </div>
       <div class="grid">
         <div class="card">
           <h2>Join a meeting</h2>
@@ -47,7 +81,7 @@
             <input id="join-url" placeholder="https://meet.google.com/abc-defg-hij" aria-label="Meet link" required>
             <button class="btn primary" type="submit">Join</button>
           </form>
-          <p class="muted small">Supervised mode: Claude's browser opens muted with camera off; you click "Ask to join" and the host admits Claude.</p>
+          <p class="muted small">Supervised mode: Claumeet's browser opens muted with camera off; you click "Ask to join" and the host admits Claumeet.</p>
           <div id="hint" class="hint hidden" role="status"></div>
           <div class="row wrap">
             <button class="btn" id="consent-btn" disabled>Announce &amp; start listening</button>
@@ -106,7 +140,7 @@
         <div class="card span2">
           <h2>Private channel <span class="badge private">PRIVATE — never spoken</span></h2>
           <form id="ask-form" class="row">
-            <input id="ask-text" placeholder="Ask Claude privately… (e.g. ওই ভাইটা কী বলল, short summary দে)" aria-label="Private question">
+            <input id="ask-text" placeholder="Ask Claumeet privately… (e.g. ওই ভাইটা কী বলল, short summary দে)" aria-label="Private question">
             <button class="btn" type="submit">Ask privately</button>
           </form>
           <div id="owner-replies" class="scroll list"></div>
@@ -114,11 +148,11 @@
         <div class="card">
           <h2>Speak in the meeting <span class="badge public">PUBLIC</span></h2>
           <form id="say-form">
-            <textarea id="say-text" rows="3" placeholder="What should Claude say? It rephrases naturally."></textarea>
+            <textarea id="say-text" rows="3" placeholder="What should Claumeet say? It rephrases naturally."></textarea>
             <button class="btn primary" type="submit">Say it</button>
           </form>
           <form id="chat-form" class="row">
-            <input id="chat-text" placeholder="Post in Meet chat as Claude">
+            <input id="chat-text" placeholder="Post in Meet chat as Claumeet">
             <button class="btn" type="submit">Send chat</button>
           </form>
           <button class="btn" data-cmd="screen_capture">Describe shared screen (if enabled)</button>
@@ -140,7 +174,7 @@
         <div class="card">
           <h2>Voice audition <span class="muted small">(plays here only, never in a meeting)</span></h2>
           <form id="aud-form">
-            <textarea id="aud-text" rows="3">কী অবস্থা মামা, আজকা আড্ডা জমব নাকি? আমি Claude, একটা AI, কিন্তু আড্ডায় কারো থেকে কম না! 😄</textarea>
+            <textarea id="aud-text" rows="3">কী অবস্থা মামা, আজকা আড্ডা জমব নাকি? আমি Claumeet, একটা AI, কিন্তু আড্ডায় কারো থেকে কম না! 😄</textarea>
             <button class="btn" type="submit">Play sample</button>
           </form>
           <audio id="aud-player" controls class="hidden"></audio>
@@ -206,7 +240,7 @@
               <option value="weekdays">Weekdays (Sun–Thu)</option><option value="weekly">Weekly</option></select>
             <button class="btn" type="submit">Approve</button>
           </form>
-          <p class="muted small">Times are Asia/Dhaka. The PC must be on and Claude running; missed windows are never joined late.</p>
+          <p class="muted small">Times are Asia/Dhaka. The PC must be on and Claumeet running; missed windows are never joined late.</p>
         </div>
         <div class="card span2">
           <h2>Approved meetings</h2>

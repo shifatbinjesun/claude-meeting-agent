@@ -2,7 +2,7 @@
 
     claude-agent run            start Control Center + supervisor (prints a one-time pairing link)
     claude-agent doctor         check this PC (Python, Chrome, RAM, disk, network, key, ports)
-    claude-agent signin         open Claude's dedicated browser profile to sign in the AI Google account
+    claude-agent signin         open Claumeet's dedicated browser profile to sign in the AI Google account
     claude-agent set-key        store the Gemini API key in Windows Credential Manager (hidden input)
     claude-agent probe          probe free models with the stored key
     claude-agent stop           ask a running instance to shut down
@@ -63,9 +63,9 @@ def doctor(as_json: bool = False) -> int:
         import playwright  # noqa: F401
         add("Playwright", True, "installed")
     except ImportError:
-        add("Playwright", False, "missing", "Run Install-Claude.ps1 again")
+        add("Playwright", False, "missing", "Run Install-Claumeet.ps1 again")
     host, port = cfg.get("dashboard.host"), int(cfg.get("dashboard.port"))
-    add("Dashboard port", _port_free(host, port), f"{host}:{port}", "Another app or Claude instance uses this port")
+    add("Dashboard port", _port_free(host, port), f"{host}:{port}", "Another app or Claumeet instance uses this port")
     add("Dashboard bind", host in ("127.0.0.1", "localhost"), host,
         "Loopback is recommended; LAN access needs a passphrase and HTTPS (docs/SECURITY.md)")
     add("Secret store", "fail" not in secrets.backend_name().lower(), secrets.backend_name(),
@@ -102,7 +102,7 @@ async def _run(open_browser: bool) -> None:
     code = sup.owner.new_pairing_code()
     link = f"http://127.0.0.1:{port}/pair?code={code}"
     (paths.data_dir() / "agent.pid").write_text(str(os.getpid()))
-    print("\n  Claude Control Center is starting.\n  Open this one-time link on THIS PC (valid 10 min):\n\n  "
+    print("\n  Claumeet Control Center is starting.\n  Open this one-time link on THIS PC (valid 10 min):\n\n  "
           f"{link}\n", flush=True)
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="warning", access_log=False,
                                            ws_ping_interval=20))
@@ -136,7 +136,7 @@ def request_stop() -> int:
     pid_file = paths.data_dir() / "agent.pid"
     for _ in range(20):
         if not pid_file.exists():
-            print("Claude stopped.")
+            print("Claumeet stopped.")
             return 0
         time.sleep(0.5)
     if pid_file.exists():
@@ -146,14 +146,14 @@ def request_stop() -> int:
             p = psutil.Process(pid)
             if "python" in p.name().lower():
                 os.kill(pid, signal.SIGTERM)
-                print("Claude did not stop in time; sent terminate signal.")
+                print("Claumeet did not stop in time; sent terminate signal.")
         except Exception:
             pass
     return 0
 
 
 def cli(argv: list[str] | None = None) -> None:
-    ap = argparse.ArgumentParser(prog="claude-agent", description="Claude Meet Agent " + __version__)
+    ap = argparse.ArgumentParser(prog="claude-agent", description="Claumeet " + __version__)
     sub = ap.add_subparsers(dest="cmd")
     r = sub.add_parser("run")
     r.add_argument("--no-browser", action="store_true")
@@ -179,7 +179,7 @@ def cli(argv: list[str] | None = None) -> None:
     elif a.cmd == "signin":
         from .meet.browser import open_signin_window
         open_signin_window()
-        print("A normal Chrome window opened with Claude's dedicated profile. Sign in the AI-labeled Google account, "
+        print("A normal Chrome window opened with Claumeet's dedicated profile. Sign in the AI-labeled Google account, "
               "then close the window.")
     elif a.cmd == "set-key":
         key = getpass.getpass("Paste Gemini API key (input hidden): ").strip()

@@ -1,0 +1,76 @@
+name: Build Windows installer
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Inno Setup (if missing)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          if (-not (Test-Path $iscc)) { throw "ISCC not found" }
+          "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build ClaumeetSetup.exe
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v"); if (-not ($ver -match '^\d+\.\d+\.\d+$')) { $ver = "0.2.0" }
+          & $env:ISCC "/DAppVersion=$ver" installer\ClaumeetSetup.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+          $h = (Get-FileHash dist\ClaumeetSetup.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  ClaumeetSetup.exe" | Out-File dist\ClaumeetSetup.exe.sha256 -Encoding ascii
+          Write-Host "SHA256: $h"
+      - name: Test silent install end-to-end
+        shell: pwsh
+        env:
+          CI: "true"
+        run: |
+          $p = Start-Process dist\ClaumeetSetup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/LOG=$PWD\install.log" -Wait -PassThru
+          Write-Host "installer exit code: $($p.ExitCode)"
+          $vpy = "$env:LOCALAPPDATA\ClaudeMeetAgent\venv\Scripts\python.exe"
+          if (-not (Test-Path $vpy)) { Get-Content install.log -Tail 60; Get-Content "$env:LOCALAPPDATA\ClaudeMeetAgent\logs\install.log" -Tail 60 -ErrorAction SilentlyContinue; throw "venv missing after install" }
+          & $vpy -m claude_agent doctor
+          $app = "$env:LOCALAPPDATA\Programs\ClaudeMeetingAgent"
+          if (-not (Test-Path "$app\Start-Claumeet.cmd")) { throw "app files missing" }
+          $srv = Start-Process $vpy -ArgumentList "-m","claude_agent","run","--no-browser" -PassThru -WindowStyle Hidden
+          $ok = $false
+          for ($i = 0; $i -lt 30; $i++) { Start-Sleep 1; try { $r = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { $ok = $true; break } } catch {} }
+          if (-not $ok) { throw "Control Center did not answer" }
+          Write-Host "Control Center answered HTTP 200 after $i s"
+          & $vpy -m claude_agent stop
+          Start-Sleep 3
+          $un = Get-ChildItem "$app\unins*.exe" | Select-Object -First 1
+          Start-Process $un.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
+          if (Test-Path "$env:LOCALAPPDATA\ClaudeMeetAgent\venv") { throw "uninstall left the venv behind" }
+          Write-Host "Uninstall removed the environment."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClaumeetSetup
+          path: dist/*
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $notes = @"
+          **Download ClaumeetSetup.exe and double-click it.** No administrator rights needed.
+
+          The installer explains what you need (a separate Google account for Claumeet and a free Gemini API key) and where to get them. Then the Claumeet Control Center opens with a 3-step setup guide.
+
+          **Safety**
+          - Open source, and built automatically by GitHub Actions from this exact commit. The build log is public.
+          - SHA-256 of ClaumeetSetup.exe: see ClaumeetSetup.exe.sha256. Check it with ``Get-FileHash ClaumeetSetup.exe``.
+          - Installs per-user only, with pinned and hash-verified libraries. No drivers, no system setting changes, free AI tier only.
+          - The installer isn't code-signed (a signing certificate costs money), so Windows SmartScreen may say "Windows protected your PC". Click **More info → Run anyway** only if you downloaded it from this page.
+          "@
+          gh release create "${{ github.ref_name }}" dist/ClaumeetSetup.exe dist/ClaumeetSetup.exe.sha256 --title "Claumeet ${{ github.ref_name }}" --notes $notes

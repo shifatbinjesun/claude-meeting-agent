@@ -38,7 +38,7 @@ Run remotely and by hand: the installer's ExecutionPolicy step was blocked by th
 - With Python 3.12.10 (per-user winget): the hash-checked install succeeded (venv 237 MB). Doctor exited 0 (only the Gemini key was unset). The Control Center
   returned HTTP 200 in 3.9 s at about 69 MB working set. `stop` shut it down cleanly and freed the port.
 - Observed constraints: 0.8 GB RAM free at test time, and 1.24 GB free on C:.
-- Not done yet: `Install-Claude.cmd` run by the owner from Explorer, real Meet, Gemini.
+- Not done yet: `Install-Claumeet.cmd` run by the owner from Explorer, real Meet, Gemini.
 
 ## Measurements (Linux container, not the target PC)
 | Metric | Value |
@@ -58,7 +58,7 @@ Run remotely and by hand: the installer's ExecutionPolicy step was blocked by th
 2. **Gemini Live conversation, latency p50/p95, interruption on real audio:** add the key, Probe, run the meeting, and read the Provider & Performance latencies (`end_of_input_to_first_audio_ms`).
 3. **Bangladeshi voice quality:** use Personality Studio → audition voices (Charon, Orus, Puck, Fenrir, Iapetus) and have native listeners score them.
 4. **Bengali ASR intent ≥90%:** this needs 30 or more consented recordings.
-5. **Windows installer end-to-end:** the scripts parse and the lockfile installs on Windows CI, but `Install-Claude.cmd` itself (with its prompts and shortcut) hasn't run on a real desktop yet.
+5. **Windows installer end-to-end:** `Install-Claumeet.cmd` completed on one real Windows 11 PC (second attempt, after freeing disk space). `ClaumeetSetup.exe` is built and smoke-tested (silent install, doctor, HTTP 200, uninstall) on the Windows CI runner only. Its interactive wizard pages haven't been clicked through on a real desktop yet.
 6. **30/60-minute soak, Windows RAM/CPU with real Meet:** watch Overview → App RAM during a long private test.
 
 ## Known limitations

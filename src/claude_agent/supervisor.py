@@ -267,7 +267,7 @@ class Supervisor:
         self.browser = factory(self._on_meet_audio, self._on_browser_status,
                                    locale=self.cfg.get("meet.locale", "en-US"),
                                    headless=bool(self.cfg.get("meet.headless", False)),
-                                   display_name=self.cfg.get("identity.display_name", "Claude (AI)"))
+                                   display_name=self.cfg.get("identity.display_name", "Claumeet (AI)"))
         try:
             await self.browser.start()
             await self.browser.open_meeting(url)
@@ -281,7 +281,7 @@ class Supervisor:
         if self.cfg.get("meet.join_mode", "supervised") == "assisted":
             await self.browser.request_join()
         else:
-            self.emit("owner_hint", {"text": "Click 'Ask to join' in Claude's browser window. The host admits Claude."},
+            self.emit("owner_hint", {"text": "Click 'Ask to join' in Claumeet's browser window. The host admits Claumeet."},
                       private=True)
         self.meeting_started = time.time()
         self.spawn(self._watch_meeting(), "watch")
@@ -348,11 +348,11 @@ class Supervisor:
         if not self.cfg.get("consent.require_before_processing", True):
             await self.grant_consent("config")
         else:
-            self.emit("owner_hint", {"text": "Claude joined muted. Press 'Announce & start' after everyone is "
+            self.emit("owner_hint", {"text": "Claumeet joined muted. Press 'Announce & start' after everyone is "
                                              "informed, or announce it yourself."}, private=True)
 
     async def grant_consent(self, by: str = "owner") -> dict:
-        """Owner confirms the AI disclosure was given (Claude also posts it in chat)."""
+        """Owner confirms the AI disclosure was given (Claumeet also posts it in chat)."""
         if self.state.state not in (S.CONSENT_PENDING, S.PAUSED, S.LISTENING, S.DEGRADED):
             return {"ok": False, "reason": f"state:{self.state.state.value}"}
         self.consent.mark_disclosed(by)
@@ -372,7 +372,7 @@ class Supervisor:
             await asyncio.sleep(1.5)
             await self.live.send_text(
                 "[system event] You just joined and the owner confirmed disclosure. Introduce yourself in one or "
-                "two short sentences in Bangla: you are Claude, an AI, here with the owner's permission, and anyone "
+                "two short sentences in Bangla: you are Claumeet, an AI, here with the owner's permission, and anyone "
                 "can ask you to stop listening. Light, friendly.", True)
             self.arbiter.st.last_addressed = time.time()   # the intro is an invited turn
         elif not self.live:
@@ -474,14 +474,14 @@ class Supervisor:
 
     async def _on_chat(self, msg: dict) -> None:
         sender, text = msg.get("sender") or "Someone", msg.get("text") or ""
-        if not text or sender.startswith(self.cfg.get("identity.display_name", "Claude")) or text.startswith("🤖"):
+        if not text or sender.startswith(self.cfg.get("identity.display_name", "Claumeet")) or text.startswith("🤖"):
             return
         # Opt-out is honoured even before consent is settled (checked locally; nothing is sent anywhere).
         if addressing.is_opt_out(text):
             self.decision("consent", "pause", "participant_opted_out_in_chat")
             self.pause_processing(True, "participant_opt_out")
             if self.browser:
-                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claude paused listening.)", 0)
+                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claumeet paused listening.)", 0)
             return
         if not self.consent.allowed("chat"):
             return
@@ -523,8 +523,8 @@ class Supervisor:
             return False
         ok = await self.browser.send_chat(safe, float(self.cfg.get("meet.chat_min_interval_seconds", 8)))
         if ok:
-            self.chat_log.append({"ts": time.time(), "sender": "Claude", "text": safe})
-            self.emit("chat", {"sender": "Claude", "text": safe})
+            self.chat_log.append({"ts": time.time(), "sender": "Claumeet", "text": safe})
+            self.emit("chat", {"sender": "Claumeet", "text": safe})
         return ok
 
     # ================= inbound audio =================
@@ -658,8 +658,8 @@ class Supervisor:
         if g.verdict == Verdict.ALLOW:
             self.arbiter.claude_turn_ended()
             if g.text.strip():
-                ln = self.ctx.add("Claude", g.text, "voice", 1.0)
-                self.emit("transcript", {"speaker": "Claude", "text": ln.text, "confidence": 1.0})
+                ln = self.ctx.add("Claumeet", g.text, "voice", 1.0)
+                self.emit("transcript", {"speaker": "Claumeet", "text": ln.text, "confidence": 1.0})
         if self.state.state == S.SPEAKING:
             self.state.transition(S.LISTENING, "turn_complete")
         self.gate = TurnGate(turn_id=g.turn_id, verdict=Verdict.DROP if g.verdict != Verdict.ALLOW else g.verdict)
@@ -691,7 +691,7 @@ class Supervisor:
         self.emit("transcript", {"speaker": "Meeting audio", "text": ln.text, "confidence": None})
         obs = self.arbiter.heard(text)
         if obs["stop"]:
-            # Anyone may ask Claude to stop talking: yield the floor (not a privilege change).
+            # Anyone may ask Claumeet to stop talking: yield the floor (not a privilege change).
             r = self.policy.decide(ActionProposal("yield_floor", Channel.MEETING_VOICE, payload={"t": text[:20]}))
             self.decision("yield_floor", r.decision.value, r.reason)
             await self._flush_output("verbal_stop")
@@ -699,7 +699,7 @@ class Supervisor:
             self.decision("consent", "pause", "participant_opted_out_by_voice")
             self.pause_processing(True, "participant_opt_out")
             if self.browser:
-                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claude paused listening; the owner can "
+                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claumeet paused listening; the owner can "
                                              "resume.)", 0)
         if obs["question"] and obs["addressed"]:
             self.brain.add_question(self.state.meeting_id, "voice", text, "voice")
@@ -866,7 +866,7 @@ class Supervisor:
         mem = "\n".join(f"- [{h['domain']}] {h['title']}: {h['body'][:300]}" for h in hits)
         try:
             ans = await self.text.generate(
-                "You are Claude, the owner's private assistant during a meeting. Answer the owner briefly in their "
+                "You are Claumeet, the owner's private assistant during a meeting. Answer the owner briefly in their "
                 "language (Bangla/Banglish/English). This answer is private and will not be spoken.",
                 f"Meeting so far:\n{self.ctx.recent_text(40)}\n\nOwner memory:\n{mem}\n\nOwner asks: {text}",
                 max_tokens=500)
@@ -882,7 +882,7 @@ class Supervisor:
             return {"ok": False, "reason": "screen_consent_missing"}
         if not self.browser or not self.text:
             return {"ok": False, "reason": "not_ready"}
-        png = await self.browser.screenshot_meeting()   # Claude's own meeting tab only; not stored
+        png = await self.browser.screenshot_meeting()   # Claumeet's own meeting tab only; not stored
         try:
             ans = await self.text.generate(
                 "Describe only what is visibly shared in this Google Meet screenshot (slides/code/site). Say when text "
@@ -1005,7 +1005,7 @@ def single_instance_lock() -> object:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError as e:
         f.close()
-        raise RuntimeError("Claude Meet Agent is already running (single-instance lock held).") from e
+        raise RuntimeError("Claumeet is already running (single-instance lock held).") from e
     f.seek(0)
     f.truncate()
     f.write(str(os.getpid()))

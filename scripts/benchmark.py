@@ -46,7 +46,7 @@ res["memory_search_10k_bangla"] = timeit(lambda: b.search("ক্লাস ব�
 res["db_size_mb_10k"] = round(os.path.getsize(os.path.join(d, "bench.sqlite3")) / 2**20, 2)
 
 a = TurnArbiter()
-res["arbiter_heard_plus_decide"] = timeit(lambda: (a.heard("এই Claude, এইটা কী বলতো?"), a.decide()), 2000)
+res["arbiter_heard_plus_decide"] = timeit(lambda: (a.heard("এই Claumeet, এইটা কী বলতো?"), a.decide()), 2000)
 pol = Policy()
 res["policy_decide"] = timeit(lambda: pol.decide(ActionProposal("speak", Channel.MODEL, payload={"t": time.time()})), 2000)
 print(json.dumps(res, indent=2, ensure_ascii=False))

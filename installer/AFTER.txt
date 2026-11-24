@@ -1,0 +1,14 @@
+NEXT STEPS (the Control Center will guide you)
+
+When setup finishes, the Claumeet Control Center opens in your browser.
+Its setup wizard has three steps:
+
+  1. "Sign in Claumeet's Google account"  -> a Chrome window opens; sign in the
+     AI account you created (not your personal one), then close that window.
+  2. "Paste your Gemini key"  -> paste the free key from
+     https://aistudio.google.com/apikey  and click Save.
+     The key is checked, then stored in Windows Credential Manager.
+  3. "Test"  -> checks which free AI models your key can use.
+
+Then paste a Google Meet link and press Join.
+You can start Claumeet any time from the Desktop shortcut "Claumeet Control Center".

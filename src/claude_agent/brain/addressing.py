@@ -1,4 +1,4 @@
-"""Detect whether an utterance addresses Claude, and recognise stop/quiet/consent phrases.
+"""Detect whether an utterance addresses Claumeet, and recognise stop/quiet/consent phrases.
 
 These are conversational signals only. They NEVER authenticate the owner.
 """
@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-DEFAULT_VARIANTS = ["claude", "clyde", "cloud", "claud", "klod", "klaud", "ক্লড", "ক্লাউড", "ক্লোড", "ক্লদ", "ক্লাউড্"]
+DEFAULT_VARIANTS = ["claumeet", "claumit", "klaumeet", "klaumit", "clomeet", "clau meet", "claw meet", "clo meet", "cloud meet", "claude meet", "clau mit", "claude", "ক্লমিট", "ক্লামিট", "ক্লাউমিট", "ক্লমীট", "ক্লামীট", "ক্লো মিট", "ক্লাউড মিট", "ক্লড"]
 
 STOP_PHRASES = [
     r"\b(stop|shut up|be quiet|quiet please|enough|hold on|wait)\b",

@@ -1,6 +1,6 @@
 # CLAUDE.md: enduring rules for anyone (human or AI) developing this repository
 
-This repo builds "Claude", an openly identified AI participant for Google Meet that runs locally on a
+This repo builds "Claumeet", an openly identified AI participant for Google Meet that runs locally on a
 Windows PC and uses only free-tier AI services. The development agent is not the runtime participant.
 
 ## Non-negotiable priorities (in order)

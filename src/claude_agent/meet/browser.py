@@ -1,4 +1,4 @@
-"""Playwright adapter for Claude's dedicated Google Meet browser.
+"""Playwright adapter for Claumeet's dedicated Google Meet browser.
 
 * Dedicated persistent profile (never the owner's everyday cookies).
 * Mic replaced by the in-page bridge; physical devices replaced by Chrome's fake devices; camera refused.
@@ -50,7 +50,7 @@ def find_chrome() -> str | None:
 
 
 def open_signin_window(profile: Path | None = None) -> subprocess.Popen:
-    """Open Claude's dedicated profile in normal (non-automated) Chrome so the owner can sign in
+    """Open Claumeet's dedicated profile in normal (non-automated) Chrome so the owner can sign in
     the AI-labeled Google account through Google's ordinary flow (MFA/CAPTCHA handled by the owner)."""
     chrome = find_chrome()
     if not chrome:
@@ -62,7 +62,7 @@ def open_signin_window(profile: Path | None = None) -> subprocess.Popen:
 
 class MeetBrowser:
     def __init__(self, on_audio: Callable[[bytes, float], None], on_status: Callable[[str, dict], Awaitable[None]],
-                 locale: str = "en-US", headless: bool = False, display_name: str = "Claude (AI)",
+                 locale: str = "en-US", headless: bool = False, display_name: str = "Claumeet (AI)",
                  profile: Path | None = None, executable: str | None = None):
         self.on_audio, self.on_status = on_audio, on_status
         self.locale, self.headless, self.display_name = locale, headless, display_name
@@ -226,7 +226,7 @@ class MeetBrowser:
     async def leave(self) -> bool:
         return await self._click_if(r"leave call|কল ছেড়ে", 3000)
 
-    # ---------- vision (Claude's own meeting tab only) ----------
+    # ---------- vision (Claumeet's own meeting tab only) ----------
     async def screenshot_meeting(self) -> bytes:
         return await self.page.screenshot(type="png", full_page=False)
 
@@ -234,7 +234,7 @@ class MeetBrowser:
     async def open_demo(self, file_url: str) -> None:
         if not file_url.startswith(("file:", "https://")):
             raise ValueError("demo must be a local file or https page")
-        # Separate, ephemeral browser: no cookies, storage or credentials from Claude's Meet profile.
+        # Separate, ephemeral browser: no cookies, storage or credentials from Claumeet's Meet profile.
         if not self.demo_page:
             self._demo_browser = await self._pw.chromium.launch(headless=False, args=["--no-first-run"])
             dctx = await self._demo_browser.new_context(accept_downloads=False, java_script_enabled=True)

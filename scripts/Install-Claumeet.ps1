@@ -1,6 +1,6 @@
 <#
-  Claude Meet Agent - Windows installer (per-user, no admin, reversible).
-  Run by double-clicking Install-Claude.cmd (uses -ExecutionPolicy Bypass for this one process only;
+  Claumeet - Windows installer (per-user, no admin, reversible).
+  Run by double-clicking Install-Claumeet.cmd (uses -ExecutionPolicy Bypass for this one process only;
   your machine's execution policy is NOT changed).
 
   What it does:
@@ -10,7 +10,7 @@
     4. Optionally creates Desktop/Start Menu shortcuts.
   It never installs drivers, changes audio defaults, disables security features or joins meetings.
 #>
-param([switch]$Yes)
+param([switch]$Yes, [switch]$Launch, [switch]$NoShortcut)
 $ErrorActionPreference = "Stop"
 $Repo = Split-Path -Parent $PSScriptRoot
 $AppHome = Join-Path $env:LOCALAPPDATA "ClaudeMeetAgent"
@@ -18,9 +18,12 @@ $Venv = Join-Path $AppHome "venv"
 
 function Say($m, $c = "Gray") { Write-Host $m -ForegroundColor $c }
 function Ask($q) { if ($Yes) { return $true }; $a = Read-Host "$q [y/N]"; return $a -match '^(y|yes)$' }
-function Fail($m) { Say "`n!! $m" Red; Read-Host "Press Enter to close"; exit 1 }
+function Fail($m) { Say "`n!! $m" Red; Say "Send a screenshot of this window to get help."; if (-not $env:CI) { Read-Host "Press Enter to close" }; exit 1 }
+# Log everything so problems can be diagnosed without screenshots.
+New-Item -ItemType Directory -Force -Path (Join-Path $env:LOCALAPPDATA "ClaudeMeetAgent\logs") | Out-Null
+try { Start-Transcript -Path (Join-Path $env:LOCALAPPDATA "ClaudeMeetAgent\logs\install.log") -Force | Out-Null } catch {}
 
-Say "`n=== Claude Meet Agent installer ===" Cyan
+Say "`n=== Claumeet installer ===" Cyan
 Say "Repository: $Repo"
 Say "Data folder: $AppHome"
 New-Item -ItemType Directory -Force -Path $AppHome | Out-Null
@@ -85,7 +88,7 @@ Say "Installing pinned dependencies (hash-checked)..."
 & $VPy -m pip install --quiet --require-hashes -r (Join-Path $Repo "requirements-windows.lock")
 if ($LASTEXITCODE -ne 0) { Fail "Dependency install failed. Check your internet connection and run again." }
 & $VPy -m pip install --quiet --no-deps -e $Repo
-if ($LASTEXITCODE -ne 0) { Fail "Installing Claude Meet Agent failed." }
+if ($LASTEXITCODE -ne 0) { Fail "Installing Claumeet failed." }
 if (-not $chrome) {
   Say "Downloading Playwright Chromium (official Playwright CDN)..."
   & $VPy -m playwright install chromium
@@ -93,20 +96,27 @@ if (-not $chrome) {
 Set-Content -Path (Join-Path $AppHome "repo.txt") -Value $Repo -Encoding ASCII
 
 # --- shortcuts ---
-if (Ask "Create a Desktop shortcut 'Claude Control Center'?") {
+$legacy = Join-Path ([Environment]::GetFolderPath("Desktop")) "Claude Control Center.lnk"   # pre-rename shortcut
+if (Test-Path $legacy) { Remove-Item $legacy -Force }
+if (-not $NoShortcut -and (Ask "Create a Desktop shortcut 'Claumeet Control Center'?")) {
   $ws = New-Object -ComObject WScript.Shell
-  $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Claude Control Center.lnk"))
-  $lnk.TargetPath = Join-Path $Repo "Start-Claude.cmd"
+  $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Claumeet Control Center.lnk"))
+  $lnk.TargetPath = Join-Path $Repo "Start-Claumeet.cmd"
   $lnk.WorkingDirectory = $Repo
-  $lnk.Description = "Start Claude Meet Agent and open the Control Center"
+  $lnk.Description = "Start Claumeet and open the Control Center"
   $lnk.Save()
   Say "Shortcut created." Green
 }
 
 Say "`nRunning health check..." Cyan
 & $VPy -m claude_agent doctor
+if ($Launch) {
+  Say "`nInstalled! Starting Claumeet... the Control Center opens in your browser and walks you through setup." Green
+  Start-Process -FilePath (Join-Path $Repo "Start-Claumeet.cmd") -WorkingDirectory $Repo
+  Start-Sleep -Seconds 3
+  exit 0
+}
 Say "`nInstalled. Next steps:" Green
-Say "  1. Double-click SignIn-Claude.cmd and sign in the AI-labeled Google account (once)."
-Say "  2. Double-click Start-Claude.cmd (or the Desktop shortcut)."
-Say "  3. In the Control Center: Provider & Performance -> paste your free Gemini API key."
-Read-Host "Press Enter to close"
+Say "  1. Double-click Start-Claumeet.cmd (or the Desktop shortcut)."
+Say "  2. The Control Center opens and its setup wizard guides you: sign in Claumeet's Google account, paste your free Gemini key, test."
+if (-not $Yes) { Read-Host "Press Enter to close" }

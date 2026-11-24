@@ -39,10 +39,10 @@ Free-tier content may be used by Google to improve its products, which is why th
 - Our choice is **Playwright (1.65.2)** driving real Google Chrome with a **dedicated persistent profile** and a signed-in,
   AI-labeled account. Locators use accessible names and visible text. The browser locale is pinned to en-US, with Bangla fallbacks.
 - **Audio without drivers.** `meet/bridge.js` wraps `RTCPeerConnection` to read remote audio tracks, replaces `getUserMedia`
-  with a WebAudio stream that carries Claude's voice, and refuses camera requests. Chrome runs with
+  with a WebAudio stream that carries Claumeet's voice, and refuses camera requests. Chrome runs with
   `--use-fake-device-for-media-stream`, so the physical mic and camera are never opened. Data moves through Playwright's
   `expose_binding` and `evaluate`, so we don't need a CSP bypass. This fits both device setups without VB-Cable.
-- Sign-in happens in a normal, non-automated Chrome window (`SignIn-Claude.cmd`) using the same profile. If Google blocks
+- Sign-in happens in a normal, non-automated Chrome window (`SignIn-Claumeet.cmd`) using the same profile. If Google blocks
   automated Chrome for the account, the documented fallback is to report the blocker. We do **not** use stealth or evasion.
 
 ## Speech alternatives considered

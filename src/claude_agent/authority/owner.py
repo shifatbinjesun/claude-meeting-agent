@@ -1,7 +1,7 @@
 """Owner authentication for the local Control Center.
 
 Strong channel = authenticated dashboard session. Pairing uses a one-time code shown only on the
-local console / Start-Claude window. Sessions are random 256-bit tokens kept server-side; the
+local console / Start-Claumeet window. Sessions are random 256-bit tokens kept server-side; the
 browser holds only an HttpOnly SameSite=Strict cookie plus a per-session CSRF token.
 Owner passphrase (optional, for LAN/phone access) is stored as a scrypt hash.
 """

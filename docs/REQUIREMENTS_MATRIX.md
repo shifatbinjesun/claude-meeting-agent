@@ -6,10 +6,10 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 
 | Area | Requirement | Status | Evidence |
 |---|---|---|---|
-| Setup | Per-user install, no admin, hash-pinned deps, actionable errors | partly verified | Lockfile install + 245 tests pass on Windows CI. Scripts parse. Interactive installer not yet run on a desktop |
-| Setup | Doctor (Python, Chrome, RAM, disk, port, key, network, sleep) | verified (Linux + Windows CI) | `claude-agent doctor`, `Doctor-Claude.ps1` |
+| Setup | Per-user install, no admin, hash-pinned deps, actionable errors | partly verified | Lockfile install + tests pass on Windows CI. `Install-Claumeet.cmd` completed on one real PC. `ClaumeetSetup.exe` silent install/uninstall smoke-tested on Windows CI only |
+| Setup | Doctor (Python, Chrome, RAM, disk, port, key, network, sleep) | verified (Linux + Windows CI) | `claude-agent doctor`, `Doctor-Claumeet.ps1` |
 | Setup | Key validated server-side, stored in Credential Manager, never shown | verified (logic) | `test_status_never_contains_secret`, `/api/secrets/gemini` |
-| Setup | One-click start/stop, no global policy changes | impl-unverified | `Start-Claude.cmd`, `Stop-Claude.cmd` (graceful stop verified on Linux) |
+| Setup | One-click start/stop, no global policy changes | impl-unverified | `Start-Claumeet.cmd`, `Stop-Claumeet.cmd` (graceful stop verified on Linux) |
 | Join | Manual link validation, only Meet host | verified | `test_url.py` (17 cases), `test_join_rejects_non_meet_url` |
 | Join | Dedicated profile, camera off, mic muted pre-join | verified (mock) / impl-unverified (real Meet) | `test_camera_refused`, `test_full_lifecycle` |
 | Join | Waiting, admitted, removed/denied (no rejoin), ended, reconnect with backoff | verified (mock) | `test_meet_lifecycle_mock.py` |
@@ -21,7 +21,7 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 | Scheduling | Approved local schedule, Asia/Dhaka, recurrence, missed, no late joins | verified | `test_scheduler.py` |
 | Scheduling | Google Calendar read-only OAuth | not implemented | Manual approval list instead |
 | Audio | Remote-only capture at 16 kHz, no system loopback | verified (real Chromium + WebRTC loopback) | `test_captures_remote_audio_at_16k` |
-| Audio | Claude's voice into the Meet mic, physical mic never opened | verified (Chromium) | `test_voice_reaches_mic_stale_dropped_and_flush` |
+| Audio | Claumeet's voice into the Meet mic, physical mic never opened | verified (Chromium) | `test_voice_reaches_mic_stale_dropped_and_flush` |
 | Audio | Stale-generation discard, flush on stop | verified | Same test, plus `test_stale_generation_after_reconnect` |
 | Audio | Same-PC and separate-device setups | impl-unverified | `docs/AUDIO_WIRING.md`. Needs a live test |
 | Audio | VAD with hangover, no streaming of long silence | verified | `test_vad_pcm.py`, `Supervisor._on_meet_audio` |
@@ -29,7 +29,7 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 | Gemini | Free-only registry, 429 suspension, no key rotation | verified | `test_quota_registry.py` |
 | Gemini | Probe of real access | blocked (owner key) | Provider tab → Probe |
 | Voice | Warm male Bangladeshi voice, locked after audition | blocked (audition by native listeners) | Audition UI exists. Default Charon |
-| Language | Addressing, stop and opt-out in Bangla/Dhakaiya/Banglish/English | verified on 32 synthetic text cases (2 documented false positives) | `test_addressing.py` |
+| Language | Addressing, stop and opt-out in Bangla/Dhakaiya/Banglish/English | verified on 32 synthetic text cases (Claumeet name variants; plain "cloud" no longer triggers) | `test_addressing.py` |
 | Language | ASR accuracy ≥90% intent on real speech | blocked | Needs consented recordings |
 | Authority | Typed ActionProposal + deterministic policy | verified | `test_policy.py` (93 cases: 20+ authorized, 30+ unauthorized) |
 | Authority | Owner private channel, approval queue with expiry | verified (logic) | `test_model_privileged_proposal_goes_to_approval`, dashboard UI |
@@ -41,7 +41,7 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 | Memory | Domains, default-deny, revocation cascade, expiry, Bangla FTS | verified | `test_memory.py` |
 | Docs | Safe ingest (types, size, traversal) | verified | `test_document_rejects` |
 | Research | Free Wikipedia with source/date, SSRF guard, privacy-filtered query | verified (guards) / impl-unverified (live fetch) | `test_research_ssrf.py` |
-| Vision | On-demand screenshot of Claude's own tab only, consent-gated, not stored | impl-unverified | `Supervisor.describe_screen` (off by default) |
+| Vision | On-demand screenshot of Claumeet's own tab only, consent-gated, not stored | impl-unverified | `Supervisor.describe_screen` (off by default) |
 | Demos | Isolated ephemeral browser, manual share picker | impl-unverified (partial) | `MeetBrowser.open_demo`. No demo generator UI yet |
 | Dashboard | All 8 sections, auth, CSRF, origin, WebSocket, CSP | verified | `test_dashboard.py` (16), headless UI run with no console errors |
 | Dashboard | Phone/LAN access with TLS | not implemented | Localhost only |

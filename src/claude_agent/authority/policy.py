@@ -32,7 +32,7 @@ ACTIONS: dict[str, tuple[bool, bool]] = {
     "speak": (False, False),
     "chat_send": (False, False),
     "react": (False, False),
-    "yield_floor": (False, False),          # anyone may ask Claude to stop talking right now
+    "yield_floor": (False, False),          # anyone may ask Claumeet to stop talking right now
     "research_public": (False, False),
     "share_link": (False, False),           # only approved/allowlisted links, checked separately
     "demo_start": (True, False),

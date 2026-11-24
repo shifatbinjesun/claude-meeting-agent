@@ -72,3 +72,12 @@ input[type=range] { padding: 0; accent-color: var(--accent); }
   .topbar .muted { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.wizard { margin-bottom: var(--gap); border-color: var(--accent); }
+.wizard a { color: var(--accent2); }
+.steps { padding-left: 20px; margin: 8px 0; }
+.steps > li { margin: 12px 0; padding: 10px 12px; background: var(--panel2); border-radius: 10px; border: 1px solid var(--line); }
+.steps > li.done { opacity: .75; }
+.step-head { display: flex; align-items: center; gap: 8px; }
+.tick { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
+li.done .tick { background: var(--ok); border-color: var(--ok); }

@@ -1,9 +1,9 @@
 <#
-  Encrypted backup of Claude's memory database and settings using Windows DPAPI (CurrentUser):
+  Encrypted backup of Claumeet's memory database and settings using Windows DPAPI (CurrentUser):
   only your Windows account on this PC can decrypt it. The Google browser profile and the API key
   are NOT included (sign in / paste the key again after a restore).
-  Usage:  Backup-Claude.ps1            -> creates Backups\claude-<date>.cmabak
-          Backup-Claude.ps1 -Restore <file>
+  Usage:  Backup-Claumeet.ps1            -> creates Backups\claude-<date>.cmabak
+          Backup-Claumeet.ps1 -Restore <file>
 #>
 param([string]$Restore)
 Add-Type -AssemblyName System.Security
@@ -11,7 +11,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $AppHome = Join-Path $env:LOCALAPPDATA "ClaudeMeetAgent"
 $Out = Join-Path $AppHome "Backups"; New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $pidFile = Join-Path $AppHome "agent.pid"
-if (Test-Path $pidFile) { Write-Host "Stop Claude first (Stop-Claude.cmd)." -ForegroundColor Yellow; exit 1 }
+if (Test-Path $pidFile) { Write-Host "Stop Claumeet first (Stop-Claumeet.cmd)." -ForegroundColor Yellow; exit 1 }
 if ($Restore) {
   $bytes = [IO.File]::ReadAllBytes($Restore)
   $plain = [Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, "CurrentUser")
