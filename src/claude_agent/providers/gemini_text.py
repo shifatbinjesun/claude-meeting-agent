@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 
+from .client import make_client, short_error
 from .quota import QuotaGuard, classify_error
 
 
@@ -18,8 +19,7 @@ class GeminiText:
 
     def client(self):
         if self._client is None:
-            from google import genai
-            self._client = genai.Client(api_key=self.api_key)
+            self._client = make_client(self.api_key)
         return self._client
 
     async def generate(self, system: str, prompt: str, *, image_png: bytes | None = None,
@@ -28,32 +28,38 @@ class GeminiText:
         contents: list = [prompt]
         if image_png:
             contents.append(types.Part.from_bytes(data=image_png, mime_type="image/png"))
-        last = None
+        errors: list[str] = []
         for model in self.models:
             if not self.quota.h(model).available():
+                errors.append(f"{model}:suspended")
                 continue
-            try:
-                resp = await asyncio.wait_for(self.client().aio.models.generate_content(
-                    model=model, contents=contents,
-                    config=types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens,
-                                                       temperature=0.8)), timeout)
-                self.quota.ok(model)
-                self.name = model
-                return (resp.text or "").strip()
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                quota, retry = classify_error(exc)
-                self.quota.fail(model, f"{type(exc).__name__}: {exc}", retry, quota)
-                last = exc
-        raise ProviderUnavailable(str(last) if last else "no eligible text model available")
+            for attempt in range(2):     # one quick retry when Google is briefly busy (503) or slow
+                try:
+                    resp = await asyncio.wait_for(self.client().aio.models.generate_content(
+                        model=model, contents=contents,
+                        config=types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens,
+                                                           temperature=0.8)), timeout)
+                    self.quota.ok(model)
+                    self.name = model
+                    return (resp.text or "").strip()
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    reason = short_error(exc)
+                    if attempt == 0 and reason in ("busy(503)", "server_error(500)", "timeout"):
+                        await asyncio.sleep(1.5)
+                        continue
+                    quota, retry = classify_error(exc)
+                    self.quota.fail(model, f"{type(exc).__name__}: {str(exc)[:200]}", retry, quota)
+                    errors.append(f"{model}:{reason}")
+                    break
+        raise ProviderUnavailable("; ".join(errors) or "no eligible text model available")
 
 
 async def probe(api_key: str, model: str, kind: str) -> str:
     """Minimal real access test. Returns 'ok' or 'failed:<reason>'. Uses a handful of tokens."""
-    from google import genai
     from google.genai import types
-    client = genai.Client(api_key=api_key)
+    client = make_client(api_key)
     try:
         if kind == "text":
             r = await asyncio.wait_for(client.aio.models.generate_content(
@@ -81,4 +87,4 @@ async def probe(api_key: str, model: str, kind: str) -> str:
             return "ok" if any(p.inline_data for p in parts) else "failed:no_audio"
         return "failed:unknown_kind"
     except Exception as exc:
-        return f"failed:{type(exc).__name__}:{str(exc)[:120]}"
+        return f"failed:{short_error(exc)}"

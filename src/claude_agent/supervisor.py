@@ -206,6 +206,16 @@ class Supervisor:
         self.provider_status = "verified" if any(r["result"] == "ok" for r in results) else "unavailable"
         return results
 
+    def _no_voice_hint(self) -> str:
+        failed = [f"{m.id} → {m.probe.removeprefix('failed:')}" for m in self.registry.models.values()
+                  if m.kind == "live" and m.probe.startswith("failed")]
+        if self.provider_status == "no_api_key":
+            return "Claumeet can't speak or reply: no Gemini key yet. Add it in Provider & Performance."
+        if failed:
+            return ("Claumeet can't speak: no voice (Live) model is working (" + "; ".join(failed) + "). "
+                    "It will still try to answer in chat. Run 'Probe free models' again later.")
+        return "Claumeet can't speak: no voice (Live) model is available. It will still try to answer in chat."
+
     def _build_providers(self) -> None:
         from .providers.gemini_live import GeminiLive
         from .providers.gemini_text import GeminiText
@@ -391,6 +401,7 @@ class Supervisor:
         elif not self.live:
             self.state.transition(S.DEGRADED, "no_live_provider")
             self.emit("degraded", {"reason": self.provider_status})
+            self.emit("owner_hint", {"text": self._no_voice_hint()}, private=True)
         return {"ok": True}
 
     async def leave(self, reason: str, click: bool = True) -> None:
@@ -522,7 +533,7 @@ class Supervisor:
                                                     f"{injection.wrap_untrusted(f'{sender}: {text}', 'meet_chat')}\n"
                                                     "Reply in chat, 1-2 short sentences.", max_tokens=200)
         except Exception as e:
-            self.decision("text_fallback", "fail", type(e).__name__)
+            self.decision("text_fallback", "fail", f"{type(e).__name__}: {str(e)[:160]}")
             return
         await self._send_chat_checked(reply, Channel.MODEL)
 

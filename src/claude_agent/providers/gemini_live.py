@@ -77,8 +77,8 @@ class GeminiLive:
         self.last_input_ts = 0.0
 
     async def run(self, audio_in: asyncio.Queue, emit: Callable[[LiveOutput], Awaitable[None]]) -> None:
-        from google import genai
-        client = genai.Client(api_key=self.api_key)
+        from .client import make_client
+        client = make_client(self.api_key)
         attempts = 0
         while not self._stop.is_set():
             h = self.quota.h(self.model)

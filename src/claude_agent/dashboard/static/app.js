@@ -181,7 +181,7 @@
       $("#wz-key-msg").textContent = r.ok ? "✓ Key works and is saved." : "✗ " + r.reason + ". Copy the key again from AI Studio and paste it."; loadWizard(); });
     $("#wz-probe").addEventListener("click", async () => { $("#wz-probe-msg").textContent = "Testing… (up to a minute)";
       const r = await post("/api/probe"); const ok = r.results.filter((x) => x.result === "ok");
-      $("#wz-probe-msg").textContent = r.results.length ? (ok.length ? `✓ Working: ${ok.map((x) => x.model).join(", ")}` : "✗ No free model answered. Check the key, or try again in a few minutes.") : "Save your key first.";
+      $("#wz-probe-msg").textContent = r.results.length ? (ok.some((x) => x.kind === "live") ? `✓ Working: ${ok.map((x) => x.model).join(", ")}` : (ok.length ? `⚠ Chat works (${ok.map((x) => x.model).join(", ")}) but no voice model answered: ${r.results.filter((x) => x.kind === "live").map((x) => x.model + " " + x.result).join("; ")}. Try again in a few minutes.` : "✗ No free model answered: " + r.results.map((x) => x.model + " " + x.result).join("; "))) : "Save your key first.";
       loadWizard(); });
     $("#wz-hide").addEventListener("click", async () => { await post("/api/setup/mark", { dismissed: true }); loadWizard(); });
   }

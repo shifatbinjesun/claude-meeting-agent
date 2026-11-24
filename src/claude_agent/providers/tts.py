@@ -17,9 +17,10 @@ class GeminiTTS:
         self.name = "gemini-tts"
 
     async def synthesize(self, text: str) -> bytes:
-        from google import genai
         from google.genai import types
-        client = genai.Client(api_key=self.api_key)
+
+        from .client import make_client
+        client = make_client(self.api_key)
         style = ("Speak as a warm, friendly young Bangladeshi man from Dhaka, natural conversational pace, "
                  "light smile in the voice: ")
         for model in self.models:

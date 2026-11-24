@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-meet-agent"
-version = "0.3.0"
+version = "0.3.1"
 description = "Claumeet: an open-source, openly identified AI participant for Google Meet and Zoom, in any language, with a local Control Center. Free-tier only, consent-first."
 readme = "README.md"
 license = { text = "MIT" }

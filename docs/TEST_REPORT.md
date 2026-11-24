@@ -42,6 +42,14 @@ Run remotely and by hand: the installer's ExecutionPolicy step was blocked by th
 - Observed constraints: 0.8 GB RAM free at test time, and 1.24 GB free on C:.
 - Not done yet: `Install-Claumeet.cmd` run by the owner from Explorer, real Meet, Gemini.
 
+## First live meeting trial (2026-11-24, owner PC, v0.3.0)
+- Google sign-in and the Gemini key worked (first test call HTTP 200). Claumeet joined, posted the AI notice and saw chat.
+- **Failed:** it never spoke and chat replies failed. Logs showed the TTS and Live preview models returning **404** and
+  `gemini-2.5-flash-lite` returning 404, because the client defaulted to the `v1` API. `gemini-3.5-flash` also
+  returned 503 (Google busy) and one 20 s timeout.
+- **Fix in 0.3.1:** all calls use `v1beta` (`test_client_uses_v1beta`), one retry on 503/timeout, and clear failure
+  reasons on the dashboard. Speaking in a real meeting still needs to be re-tested on 0.3.1.
+
 ## Measurements (Linux container, not the target PC)
 | Metric | Value |
 |---|---|

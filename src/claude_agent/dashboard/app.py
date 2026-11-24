@@ -331,8 +331,8 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
     async def run_probe(request: Request):
         session(request)
         results = await sup.probe_providers()
-        if any(r["result"] == "ok" for r in results):
-            save_setup(probe_ok=True)
+        if any(r["result"] == "ok" and r["kind"] == "live" for r in results):
+            save_setup(probe_ok=True)    # "done" only when Claumeet can actually talk
         return {"results": results, "registry": sup.registry.snapshot()}
 
     @app.get("/api/registry")

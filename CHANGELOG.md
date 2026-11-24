@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 (2026-11-24)
+- **Fix: Claumeet didn't speak, and chat replies failed.** The first live trial on a real Windows PC found that the
+  Gemini client was calling Google's `v1` API, which doesn't serve the free preview models (Live voice and TTS)
+  and returns 404 for them. Every call now goes to `v1beta`.
+- Chat replies retry once when Google is briefly busy (503) or slow, then try the next free model.
+- The dashboard now says *why* it can't speak or reply (e.g. `not_found(404)`, `busy(503)`), instead of only "degraded".
+- The setup "Test" step only counts as done when a voice model answers.
+
 ## 0.3.0 (2026-11-24)
 - **Zoom support.** Zoom links (zoom.us, regional and company `*.zoom.us` hosts, or a bare meeting ID) open in Zoom's
   web client. Join, "Join Audio by Computer", mic, chat, roster and the two-step leave all work. Zoom plays voices

@@ -218,6 +218,9 @@ def setup_wizard() -> int:
     ok = [r for r in rows if r["result"] == "ok"]
     for row in rows:
         print(f"  {row['kind']:<5} {row['model']:<50} {row['result']}")
+    if ok and not any(r["kind"] == "live" for r in ok):
+        print("\n!! Chat works, but no voice (Live) model answered, so Claumeet can't speak yet. Try again later.")
+        return 1
     if ok:
         setup_state.save(probe_ok=True)
         print("\nAll set. Start Claumeet with Start-Claumeet (Windows) or 'python -m claude_agent run'.")
