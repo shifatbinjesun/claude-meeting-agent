@@ -104,6 +104,8 @@ if (-not $NoShortcut -and (Ask "Create a Desktop shortcut 'Claumeet Control Cent
   $lnk.TargetPath = Join-Path $Repo "Start-Claumeet.cmd"
   $lnk.WorkingDirectory = $Repo
   $lnk.Description = "Start Claumeet and open the Control Center"
+  $ico = Join-Path $Repo "assets\claumeet.ico"
+  if (Test-Path $ico) { $lnk.IconLocation = $ico }
   $lnk.Save()
   Say "Shortcut created." Green
 }

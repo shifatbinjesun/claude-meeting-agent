@@ -1,75 +1,112 @@
-# Claumeet
+<p align="center">
+  <img src="assets/claumeet-logo-512.png" alt="Claumeet logo" width="180">
+</p>
 
-An open-source, **openly identified** AI participant for Google Meet. It acts like a witty, warm
-Bangladeshi friend (Bangla, Dhakaiya, Banglish and English) and works as your second brain in the call.
-It runs on your own Windows PC, uses **free-tier AI only**, and you control it from a local
-**Claumeet Control Center** dashboard.
+<h1 align="center">Claumeet</h1>
 
-> Community project. Not affiliated with Anthropic or Google. The in-meeting voice and reasoning run on
-> Google's Gemini API free tier. "Claumeet" is only the participant's name, and it always says it is an AI.
+<p align="center">
+  <b>An open-source AI teammate for Google Meet and Zoom that always says it's an AI.</b><br>
+  It talks in your meeting's language, Bangla included, and runs on your own PC using only free AI.
+</p>
+
+<p align="center">
+  <a href="https://github.com/shifatbinjesun/claude-meeting-agent/releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/shifatbinjesun/claude-meeting-agent?label=download&color=4ade80"></a>
+  <a href="https://github.com/shifatbinjesun/claude-meeting-agent/actions/workflows/ci.yml"><img alt="Tests" src="https://github.com/shifatbinjesun/claude-meeting-agent/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-a78bfa"></a>
+  <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4">
+  <img alt="Free tier only" src="https://img.shields.io/badge/AI-free%20tier%20only-4ade80">
+</p>
+
+<p align="center">
+  <a href="https://github.com/shifatbinjesun/claude-meeting-agent/releases/latest/download/ClaumeetSetup.exe"><b>⬇ Download ClaumeetSetup.exe</b></a>
+  &nbsp;·&nbsp; <a href="#install-with-claude-code">Install with Claude Code</a>
+  &nbsp;·&nbsp; <a href="#is-it-safe">Is it safe?</a>
+</p>
+
+> Community project. Not affiliated with Anthropic, Google or Zoom. Voice and reasoning run on Google's Gemini API
+> **free tier**. "Claumeet" is only the participant's name, and it always tells people it is an AI.
 
 ## What it does
 
-| Feature | How |
+| | |
 |---|---|
-| Joins a Meet you approve | Its own Chrome profile and its own AI-labeled Google account. Mic starts muted, camera stays off. **You** click "Ask to join" and the host admits it (assisted mode can click for you). |
-| Listens and talks | Captures **only the remote meeting audio** inside its own tab. It speaks through an in-page virtual mic. No VB-Cable or other driver is needed, and your physical mic is never opened. |
-| Natural Bangladeshi conversation | Gemini Live native audio with a tuned persona: humor, greetings at natural pauses, short answers, it doesn't talk over people, and "চুপ থাক" stops it at once. |
-| Safety gate | Every spoken turn passes a turn arbiter plus a deterministic permission policy. Only you (the authenticated dashboard) can make it leave, mute, share or read private memory. |
-| Consent first | It processes nothing until the AI disclosure is given. It posts a bilingual disclosure in chat. Anyone can say or type "stop listening" to pause it. Late joiners are informed. |
-| Second brain | Local SQLite + FTS5 memory split into public, owner-private and consented-participant domains. It can ingest documents (txt/md/csv/json) and look up public facts on Wikipedia with sources. |
-| Control Center | Overview, Live Meeting, Owner Channel (private Q&A), Personality Studio, Memory & Knowledge, Scheduling, Provider & Performance, Security & Privacy. Emergency stop: **Ctrl+Shift+X**. |
-| One-click Windows | `ClaumeetSetup.exe` installer with a guided setup checklist, plus `Install/Start/Stop/SignIn/Doctor-Claumeet.cmd`. |
+| 🎥 **Google Meet and Zoom** | Paste a Meet or Zoom link and press **Join**. Claumeet opens its own Chrome window with the mic muted and the camera off. You click "Ask to join" or "Join", and the host admits it. Zoom runs in Zoom's own web client, so there's nothing extra to install. |
+| 🌍 **Any language** | It replies in the language people speak to it, or you can set a default. It ships with a Bangladeshi style (Bangla, Dhakaiya, Banglish) and a neutral native style for every other language. The AI notice and "stop listening" work in 20 languages. |
+| 🗣️ **Natural conversation** | Gemini Live native audio. Short answers, light humor, no talking over people. Saying "stop" or "চুপ" makes it go quiet right away. |
+| ✋ **Consent first** | It hears nothing until you announce it. It posts an AI notice in chat. Anyone can say or type "stop listening" in their own language to pause it. |
+| 🔐 **You stay in charge** | Only you, signed in to the local Control Center, can make it leave, mute, share or read private notes. Meeting talk can never give it new powers. |
+| 🧠 **Second brain** | Local memory with separate public and private notes. Document import and sourced Wikipedia lookups. |
+| 🖥️ **Control Center** | A dashboard on your own PC with a guided setup checklist. Emergency stop: **Ctrl+Shift+X**. |
 
-## Install (Windows 10/11): the easy way
+<p align="center"><img src="docs/images/control-center.png" alt="Claumeet Control Center with its setup checklist" width="820"></p>
 
-1. Open the [latest release](https://github.com/shifatbinjesun/claude-meeting-agent/releases/latest) and download **`ClaumeetSetup.exe`**.
-2. Double-click it. It installs for your user only, so it needs **no admin rights** and installs **no drivers**.
-   Before it starts it shows you exactly what Claumeet needs and where to get it:
-   - **Python 3.12** and **Google Chrome**. If they are missing, the installer offers to install them with Windows' own `winget`.
-   - A **separate Google account** for the bot, named something like "Claumeet (AI)" (free, <https://accounts.google.com/signup>).
-   - A **free Gemini API key** (<https://aistudio.google.com/apikey>). Leave billing **off**. Claumeet only uses free-tier models.
-3. When setup finishes, the **Claumeet Control Center** opens in your browser. A setup checklist at the top walks you
-   through signing in the bot account, pasting the key and testing it. The key is stored in Windows Credential Manager, never in a file.
-4. Paste a Meet link on **Overview** and click **Join**. Click **Ask to join** in Claumeet's Chrome window, and the host admits it.
-5. After you've told everyone an AI is joining, click **Announce & start listening**.
+## Install on Windows (easiest)
 
-Stop at any time with **Emergency stop** (or Ctrl+Shift+X). Use the **Stop Claumeet** shortcut to shut it down. Uninstall it from
-Windows **Settings → Apps** like any other program.
+1. **[Download ClaumeetSetup.exe](https://github.com/shifatbinjesun/claude-meeting-agent/releases/latest/download/ClaumeetSetup.exe)** and double-click it.
+   It installs for your user only, so it needs no admin rights and no drivers. If Python 3.12 or Chrome is missing, it installs them for you.
+2. When the files are in place, the installer walks you through two short steps. You can skip either one and finish it later:
+   - **Claumeet's Google account.** One button creates a new free Google account. Name it something like "Claumeet (AI)".
+     A second button signs it in through Google's normal page. Claumeet never sees the password.
+   - **Free Gemini API key.** One button opens [Google AI Studio](https://aistudio.google.com/apikey). Click
+     *Create API key*, copy it and paste it into the installer. Leave billing **off**. The key is checked, then
+     stored only in Windows Credential Manager.
+3. The **Claumeet Control Center** opens. Paste a Google Meet or Zoom link and press **Join**.
+4. Once everyone knows an AI is joining, press **Announce & start listening**.
 
-### Is the installer safe?
+Stop at any time with **Emergency stop** (Ctrl+Shift+X). Uninstall it from Windows **Settings → Apps**.
 
-No installer can promise "100% safe", so here is what you can check yourself:
-- The code is open source, and `ClaumeetSetup.exe` is built from it by a **public GitHub Actions run** ([release workflow](.github/workflows/release.yml)). That run also installs, starts and uninstalls the app as a test.
-- Each release lists the **SHA-256** of the exe. Check it with `Get-FileHash .\ClaumeetSetup.exe` in PowerShell.
-- The exe is **not code-signed** (a certificate costs money). Windows SmartScreen may say "Windows protected your PC".
-  Click **More info → Run anyway** only if you downloaded it from the release page above.
-- Python packages are installed from a **hash-pinned lock file**, so a tampered package fails to install.
-- It never turns on paid APIs, never bypasses Google sign-in or Meet admission, and keeps no audio recordings.
+## Install with Claude Code
 
-### Other ways to install
-- **No exe:** download [`Setup-Claumeet.cmd`](Setup-Claumeet.cmd) and double-click it. It downloads this repository to
-  `%USERPROFILE%\ClaudeMeetingAgent` and runs the same installer.
-- **From source:** Code → Download ZIP, extract, double-click **`Install-Claumeet.cmd`**. Then use **`Start-Claumeet.cmd`**,
-  **`Stop-Claumeet.cmd`**, **`SignIn-Claumeet.cmd`** and **`Doctor-Claumeet.cmd`**.
+Give Claude Code this repository and ask it to install Claumeet. For example:
+
+```text
+Install Claumeet from https://github.com/shifatbinjesun/claude-meeting-agent on this PC and set it up.
+```
+
+The repository includes instructions for Claude Code
+([`.claude/skills/install-claumeet`](.claude/skills/install-claumeet/SKILL.md)). Claude Code checks your PC,
+runs the installer and the health check, and starts the Control Center. The private steps stay with you:
+signing in the Google account and entering the Gemini key. You do those on Google's page and in
+`python -m claude_agent setup`, so your key never goes into a chat.
+
+## Other ways to install
+
+- **One file, no exe:** download [`Setup-Claumeet.cmd`](Setup-Claumeet.cmd) and double-click it. It downloads this
+  repository and runs the same installer.
+- **From source (Windows):** Code → Download ZIP, extract it, then double-click **`Install-Claumeet.cmd`**. After that, use
+  `Start-Claumeet.cmd`, `Stop-Claumeet.cmd`, `SignIn-Claumeet.cmd` and `Doctor-Claumeet.cmd`.
+- **macOS / Linux (experimental):** `bash scripts/install.sh`, then `claumeet setup` and `claumeet run`.
+
+## Is it safe?
+
+No installer can honestly promise "100% safe", so here's what you can check yourself:
+
+- **Open source and built in public.** `ClaumeetSetup.exe` is built from this code by a public
+  [GitHub Actions run](.github/workflows/release.yml). The same run installs, starts and uninstalls it as a test.
+- **Checksum.** Each release lists the exe's **SHA-256**. Check yours with `Get-FileHash .\ClaumeetSetup.exe` in PowerShell.
+- **Not code-signed yet.** A signing certificate costs money, so Windows SmartScreen may say "Windows protected your PC".
+  Click **More info → Run anyway** only if you downloaded the file from this repository's Releases page.
+- **Locked libraries.** Every library is installed from a hash-pinned lock file, so a tampered package won't install.
+- **Free and honest by design.** It never turns on paid APIs. It never bypasses Google or Zoom sign-in, CAPTCHAs,
+  passcodes, waiting rooms or host controls. It never records audio, and your key stays in the OS credential store.
 
 ## Honest status
 
-See [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). In short:
-the safety core, memory, dashboard, audio bridge and the meeting lifecycle are implemented and tested
-(the lifecycle against real Chromium and a **mock** Meet page). The pieces that need your Google
-account, API key and a real meeting have **not been tested live yet**. That covers joining real Google Meet, Gemini
-Live conversation quality, the Bangladeshi voice and latency.
+Tested: the safety core, memory, dashboard, installer, audio bridge and the full meeting lifecycle. The lifecycle
+runs against real Chromium with **mock** Meet and Zoom pages. Not yet tried live: joining a real Google Meet or
+Zoom call, Gemini Live voice quality, latency and how well each language sounds. Each one needs your accounts and
+a real meeting. See [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 ## Docs
-- [Implementation plan](docs/IMPLEMENTATION_PLAN.md) · [Research and model choices](docs/RESEARCH.md)
-- [Audio wiring (both device setups)](docs/AUDIO_WIRING.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Languages](docs/LANGUAGES.md) · [Audio wiring](docs/AUDIO_WIRING.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Security and threat model](docs/SECURITY.md) · [Privacy and consent templates](docs/PRIVACY.md)
-- [Requirements matrix](docs/REQUIREMENTS_MATRIX.md) · [Test report](docs/TEST_REPORT.md)
+- [Research and model choices](docs/RESEARCH.md) · [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Requirements matrix](docs/REQUIREMENTS_MATRIX.md) · [Test report](docs/TEST_REPORT.md) · [Changelog](CHANGELOG.md)
 
 ## Contributing
-PRs welcome. Read [`CLAUDE.md`](CLAUDE.md) first. Its rules on consent, security and free-only use are binding for every change.
-Run `pytest -q` and `ruff check src tests` before you open a PR.
+PRs are welcome, especially native-speaker fixes to the [translations](src/claude_agent/brain/languages.py) and
+reports from live Meet or Zoom trials. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [`CLAUDE.md`](CLAUDE.md) first.
+Their rules on consent, security and free-only use apply to every change.
 
 ## License
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Report security issues privately: see [SECURITY.md](SECURITY.md).

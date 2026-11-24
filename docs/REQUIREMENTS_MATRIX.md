@@ -7,6 +7,13 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 | Area | Requirement | Status | Evidence |
 |---|---|---|---|
 | Setup | Per-user install, no admin, hash-pinned deps, actionable errors | partly verified | Lockfile install + tests pass on Windows CI. `Install-Claumeet.cmd` completed on one real PC. `ClaumeetSetup.exe` silent install/uninstall smoke-tested on Windows CI only |
+| Platforms | Zoom links validated (zoom.us and one-label *.zoom.us only), opened in Zoom's web client | verified (unit) | `test_zoom_valid`, `test_zoom_invalid` |
+| Platforms | Zoom join, join audio, chat, roster, mic, two-step leave | impl-unverified (mock only) | `test_zoom_full_lifecycle` against a **mock Zoom page** |
+| Platforms | Zoom remote audio captured from WebAudio playback, never Claumeet's own voice | verified (mock) | `test_zoom_full_lifecycle` (`pageTaps`, `capturedFrames`) |
+| Language | Auto language or a default from 20; Bangladeshi or global style | verified (prompt) / unverified live | `test_languages`, `test_language_settings_are_validated` |
+| Language | AI notice and opt-out in 20 languages; disagreement is not an opt-out | verified (text) | `test_languages` |
+| Setup | Installer pages for the bot's Google account and a free Gemini key (env-passed, validated, stored in Credential Manager) | impl-unverified | `installer/ClaumeetSetup.iss`, `test_cli_set_key_from_env_rejects_empty_and_clears_var` |
+| Setup | Claude Code can install it from the repository link | impl-unverified | `.claude/skills/install-claumeet/SKILL.md` |
 | Setup | Doctor (Python, Chrome, RAM, disk, port, key, network, sleep) | verified (Linux + Windows CI) | `claude-agent doctor`, `Doctor-Claumeet.ps1` |
 | Setup | Key validated server-side, stored in Credential Manager, never shown | verified (logic) | `test_status_never_contains_secret`, `/api/secrets/gemini` |
 | Setup | One-click start/stop, no global policy changes | impl-unverified | `Start-Claumeet.cmd`, `Stop-Claumeet.cmd` (graceful stop verified on Linux) |

@@ -1,1 +1,0 @@
-🤖 Claumeet (AI) here, joining with the owner's permission. Audio/chat is processed by Google Gemini to reply; no recordings are kept. Type "Claumeet stop listening" anytime to pause me. | আমি একটা AI। না চাইলে "Claumeet stop listening" লিখুন, শোনা বন্ধ করব।

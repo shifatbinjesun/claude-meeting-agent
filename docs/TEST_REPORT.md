@@ -19,17 +19,19 @@ python scripts/benchmark.py
 | Suite | Tests | Result | Kind |
 |---|---|---|---|
 | test_policy (owner verification matrix) | 93 | pass | unit |
-| test_addressing (synthetic Bangla/Banglish/English intents) | 33 | pass | unit, synthetic fixtures |
-| test_url | 17 | pass | unit |
-| test_dashboard (auth, CSRF, origin, host, WS, lockout, traversal, secrets) | 16 | pass | integration (ASGI) |
+| test_addressing (synthetic Bangla/Banglish/English intents) | 34 | pass | unit, synthetic fixtures |
+| test_url (Meet + Zoom links, host allow-list, redaction) | 37 | pass | unit |
+| test_languages (20-language notices, opt-out in many scripts, disagreement is not opt-out, persona language) | 27 | pass | unit, synthetic text |
+| test_dashboard (auth, CSRF, origin, host, WS, lockout, traversal, secrets, setup, languages, CLI) | 20 | pass | integration (ASGI) |
 | test_memory (ACL, Bangla FTS, revoke, expiry, ingest) | 16 | pass | integration (SQLite) |
-| test_supervisor_gate (consent, mute, interrupt, hold, stop, injection, privacy) | 13 | pass | integration, **mock** Live model and browser |
+| test_supervisor_gate (consent, mute, interrupt, hold, stop, injection, privacy, language settings) | 14 | pass | integration, **mock** Live model and browser |
 | test_arbiter (social timing scenarios) | 11 | pass | scenario replay |
 | test_config_injection | 9 | pass | unit |
 | test_research_ssrf | 8 | pass | unit |
 | test_bridge_e2e (remote capture, mic injection, flush, camera refused) | 5 | pass | **real Chromium + WebRTC loopback** |
 | test_consent, test_quota_registry, test_scheduler | 15 | pass | unit |
 | test_meet_lifecycle_mock (join → admit → consent → newcomer → opt-out → leave; removal; busy) | 3 | pass | real Chromium, **mock Meet page** |
+| test_zoom_lifecycle_mock (Zoom link → web client → join audio → WebAudio playback tap → consent → chat notice → Spanish opt-out → two-step leave) | 1 | pass | real Chromium, **mock Zoom page** |
 | test_vad_pcm, test_privacy | 6 | pass | unit |
 
 ## Owner PC install trial (2026-11-24, Windows 11 Pro build 26200, i5-8400, 8 GB RAM)
@@ -54,11 +56,13 @@ Run remotely and by hand: the installer's ExecutionPolicy step was blocked by th
 | Capture frame rate | 23.5 frames/s (2048 samples at 48 kHz) |
 
 ## Blocked (needs the owner) and how to reproduce
+1. **Real Zoom web client:** join a private test Zoom meeting with a link, and confirm the join, "Join Audio by Computer", hearing people, speaking, chat and leave. The Zoom selectors and audio tap were checked against a mock page only.
 1. **Real Meet join/admission/chat selectors:** Install, SignIn, Start, join a private test meeting, and confirm each state on the Live tab.
 2. **Gemini Live conversation, latency p50/p95, interruption on real audio:** add the key, Probe, run the meeting, and read the Provider & Performance latencies (`end_of_input_to_first_audio_ms`).
+3. **Voice quality per language:** how well Gemini speaks each language live is unmeasured.
 3. **Bangladeshi voice quality:** use Personality Studio → audition voices (Charon, Orus, Puck, Fenrir, Iapetus) and have native listeners score them.
 4. **Bengali ASR intent ≥90%:** this needs 30 or more consented recordings.
-5. **Windows installer end-to-end:** `Install-Claumeet.cmd` completed on one real Windows 11 PC (second attempt, after freeing disk space). `ClaumeetSetup.exe` is built and smoke-tested (silent install, doctor, HTTP 200, uninstall) on the Windows CI runner only. Its interactive wizard pages haven't been clicked through on a real desktop yet.
+5. **Windows installer end-to-end:** `Install-Claumeet.cmd` completed on one real Windows 11 PC (second attempt, after freeing disk space). `ClaumeetSetup.exe` is built and smoke-tested (silent install, doctor, HTTP 200, uninstall) on the Windows CI runner only. The interactive pages (Google account, Gemini key) haven't been clicked through on a real desktop yet.
 6. **30/60-minute soak, Windows RAM/CPU with real Meet:** watch Overview → App RAM during a long private test.
 
 ## Known limitations

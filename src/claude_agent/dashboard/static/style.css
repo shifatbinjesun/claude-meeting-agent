@@ -1,6 +1,6 @@
 :root {
   --bg: #0d1016; --panel: #151a23; --panel2: #1b2230; --line: #263043; --text: #e7ecf3; --muted: #93a0b4;
-  --accent: #5fb3a1; --accent2: #7aa2ff; --warn: #e6a23c; --danger: #e5484d; --ok: #46a758;
+  --accent: #4ade80; --accent2: #a78bfa; --warn: #e6a23c; --danger: #e5484d; --ok: #46a758;
   --radius: 12px; --gap: 16px; --font: "Segoe UI", system-ui, -apple-system, "Noto Sans Bengali", sans-serif;
 }
 * { box-sizing: border-box; }
@@ -55,12 +55,16 @@ input[type=range] { padding: 0; accent-color: var(--accent); }
   margin-left: 6px; vertical-align: middle; }
 .badge.private { border-color: var(--accent2); color: var(--accent2); }
 .badge.public { border-color: var(--warn); color: var(--warn); }
-.hint { background: #1d2a3a; border: 1px solid var(--accent2); padding: 8px 10px; border-radius: 8px; margin: 8px 0; }
+.hint { background: #221a3a; border: 1px solid var(--accent2); padding: 8px 10px; border-radius: 8px; margin: 8px 0; }
 .env { display: flex; gap: 3px; align-items: flex-end; height: 32px; margin-top: 10px; }
 .env span { flex: 1; background: var(--accent); border-radius: 2px; min-height: 2px; }
 .sliders label { display: block; margin-top: 8px; font-size: 14px; }
 .login { display: grid; place-items: center; min-height: 100vh; padding: 16px; }
 .login-card { max-width: 420px; width: 100%; }
+.brand-logo { border-radius: 7px; display: block; }
+.login-logo { border-radius: 14px; display: block; margin: 0 auto 10px; }
+.login-card h1 { text-align: center; }
+#disc-langs label { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
 .who { color: var(--accent2); font-weight: 600; }
 .claude { color: var(--accent); font-weight: 600; }
 @media (max-width: 760px) {

@@ -5,6 +5,7 @@
     claude-agent signin         open Claumeet's dedicated browser profile to sign in the AI Google account
     claude-agent set-key        store the Gemini API key in Windows Credential Manager (hidden input)
     claude-agent probe          probe free models with the stored key
+    claude-agent setup          guided first-run setup in the terminal (Google account, free Gemini key, test)
     claude-agent stop           ask a running instance to shut down
 """
 from __future__ import annotations
@@ -23,7 +24,7 @@ import sys
 import time
 import webbrowser
 
-from . import __version__, paths, secrets
+from . import __version__, paths, secrets, setup_state
 from .config import Config
 from .observability import log as obslog
 
@@ -152,6 +153,79 @@ def request_stop() -> int:
     return 0
 
 
+GOOGLE_SIGNUP = "https://accounts.google.com/signup"
+GEMINI_KEY_PAGE = "https://aistudio.google.com/apikey"
+
+
+def store_key(key: str) -> int:
+    """Validate a Gemini key with one free request, then keep it only in the OS credential store."""
+    if not key:
+        print("!! No key given.")
+        return 2
+    from .providers.gemini_text import probe
+    res = asyncio.run(probe(key, "gemini-3.1-flash-lite", "text"))
+    if res != "ok":
+        print(f"!! Key validation failed: {res.split(':')[1] if ':' in res else res}")
+        return 1
+    secrets.put(secrets.GEMINI_KEY, key)
+    print("Key validated and stored in the OS credential store.")
+    return 0
+
+
+def setup_wizard() -> int:
+    """Terminal version of the setup checklist. Asks only for what is missing."""
+    print(f"Claumeet {__version__} setup. Press Enter to accept the suggestion in [brackets].\n")
+    st = setup_state.load()
+    print("Step 1 of 3: a Google account for Claumeet")
+    print("  Claumeet joins meetings with its OWN Google account, not yours. Name it like \"Claumeet (AI)\".")
+    if st.get("google_signed_in"):
+        print("  Done already.\n")
+    else:
+        if input("  Do you need to create that account now? [y/N] ").strip().lower().startswith("y"):
+            webbrowser.open(GOOGLE_SIGNUP)
+            print(f"  Opened {GOOGLE_SIGNUP}. Create the account, then come back here.")
+            input("  Press Enter when the account exists... ")
+        if input("  Open Claumeet's Chrome window to sign that account in? [Y/n] ").strip().lower() != "n":
+            from .meet.browser import open_signin_window
+            try:
+                open_signin_window()
+                input("  Sign in there (Google's normal page), close that window, then press Enter... ")
+                setup_state.save(google_signed_in=True)
+            except Exception as e:
+                print(f"  !! {e}")
+        print()
+    print("Step 2 of 3: a free Gemini API key")
+    if secrets.present(secrets.GEMINI_KEY):
+        print("  A key is already stored.\n")
+    else:
+        print(f"  1. Open {GEMINI_KEY_PAGE} and sign in with any Google account.")
+        print("  2. Click 'Create API key'. Leave billing OFF. Claumeet only uses free-tier models.")
+        print("  3. Copy the key and paste it below (it stays hidden and goes only to the OS credential store).")
+        if input("  Open that page now? [Y/n] ").strip().lower() != "n":
+            webbrowser.open(GEMINI_KEY_PAGE)
+        for _ in range(3):
+            if store_key(getpass.getpass("  Paste key (hidden, Enter to skip): ").strip()) == 0:
+                break
+            if input("  Try again? [Y/n] ").strip().lower() == "n":
+                break
+        print()
+    print("Step 3 of 3: test the free models")
+    if not secrets.present(secrets.GEMINI_KEY):
+        print("  Skipped: no key yet. Run this setup again later.")
+        return 1
+    from .supervisor import Supervisor
+    rows = asyncio.run(Supervisor(Config.load()).probe_providers())
+    ok = [r for r in rows if r["result"] == "ok"]
+    for row in rows:
+        print(f"  {row['kind']:<5} {row['model']:<50} {row['result']}")
+    if ok:
+        setup_state.save(probe_ok=True)
+        print("\nAll set. Start Claumeet with Start-Claumeet (Windows) or 'python -m claude_agent run'.")
+        return 0
+    print("\n!! No free model answered. Check the key and try again later (free quotas reset daily).")
+    return 1
+
+
 def cli(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="claude-agent", description="Claumeet " + __version__)
     sub = ap.add_subparsers(dest="cmd")
@@ -160,7 +234,11 @@ def cli(argv: list[str] | None = None) -> None:
     d = sub.add_parser("doctor")
     d.add_argument("--json", action="store_true")
     sub.add_parser("signin")
-    sub.add_parser("set-key")
+    k = sub.add_parser("set-key")
+    k.add_argument("--from-env", metavar="VAR", help="read the key from this environment variable (used by the installer)")
+    sm = sub.add_parser("setup-mark")
+    sm.add_argument("step", choices=["google_signed_in"])
+    sub.add_parser("setup")
     sub.add_parser("probe")
     sub.add_parser("stop")
     sub.add_parser("version")
@@ -182,14 +260,15 @@ def cli(argv: list[str] | None = None) -> None:
         print("A normal Chrome window opened with Claumeet's dedicated profile. Sign in the AI-labeled Google account, "
               "then close the window.")
     elif a.cmd == "set-key":
-        key = getpass.getpass("Paste Gemini API key (input hidden): ").strip()
-        from .providers.gemini_text import probe
-        res = asyncio.run(probe(key, "gemini-3.1-flash-lite", "text"))
-        if res != "ok":
-            print(f"!! Key validation failed: {res.split(':')[1] if ':' in res else res}")
-            sys.exit(1)
-        secrets.put(secrets.GEMINI_KEY, key)
-        print("Key validated and stored in the OS credential store.")
+        if a.from_env:
+            key = os.environ.pop(a.from_env, "").strip()
+        else:
+            key = getpass.getpass("Paste Gemini API key (input hidden): ").strip()
+        sys.exit(store_key(key))
+    elif a.cmd == "setup-mark":
+        setup_state.save(**{a.step: True})
+    elif a.cmd == "setup":
+        sys.exit(setup_wizard())
     elif a.cmd == "probe":
         from .supervisor import Supervisor
         sup = Supervisor(Config.load())

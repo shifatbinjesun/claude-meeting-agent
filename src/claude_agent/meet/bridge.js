@@ -1,17 +1,19 @@
-// Claumeet Meet bridge. Injected into Claumeet's OWN dedicated browser profile only.
+// Claumeet meeting bridge (Google Meet + Zoom web client). Injected into Claumeet's OWN dedicated browser profile only.
 // - Replaces the microphone with an in-page audio stream that carries Claumeet's voice
 //   (the physical microphone is never opened; camera requests are refused -> camera stays off).
-// - Captures ONLY remote meeting audio (WebRTC remote tracks), downsampled to 16 kHz PCM.
+// - Captures ONLY remote meeting audio (WebRTC remote tracks; on Zoom also the page's own WebAudio playback,
+//   which is where its web client plays other people's voices), downsampled to 16 kHz PCM.
 // - Observes the DOM for chat messages and participants (read-only) and reports to Python.
-// Nothing here bypasses sign-in, admission, host controls or Google security features.
+// Nothing here bypasses sign-in, CAPTCHA, passcodes, admission, host controls or platform security features.
 (() => {
   if (window.__claudeBridge) return;
+  const IS_ZOOM = /(^|\.)zoom\.us$/i.test(location.hostname);
   const B = (window.__claudeBridge = {
     version: 1, gen: 0, captureEnabled: false, nodes: [], outEnd: 0,
-    stats: { capturedFrames: 0, played: 0, flushes: 0, remoteTracks: 0, droppedStale: 0, lastPeak: 0 },
-    seenMsgs: new Set(), participants: {},
+    stats: { capturedFrames: 0, played: 0, flushes: 0, remoteTracks: 0, droppedStale: 0, lastPeak: 0, pageTaps: 0, zoomMsgs: 0 },
+    seenMsgs: new Set(), seenEls: new WeakSet(), participants: {}, platform: "",
   });
-  let ctx = null, micDest = null, micGain = null, mixIn = null, proc = null;
+  let ctx = null, micDest = null, micGain = null, mixIn = null, proc = null, tapIn = null;
 
   function b64FromBuf(buf) {
     const bytes = new Uint8Array(buf); let s = "";
@@ -29,6 +31,7 @@
     micDest = ctx.createMediaStreamDestination();
     micGain = ctx.createGain(); micGain.connect(micDest);
     mixIn = ctx.createGain();
+    tapIn = ctx.createGain(); tapIn.connect(mixIn);
     proc = ctx.createScriptProcessor(2048, 1, 1);
     const sink = ctx.createGain(); sink.gain.value = 0;
     mixIn.connect(proc); proc.connect(sink); sink.connect(ctx.destination);
@@ -43,6 +46,8 @@
         out[i] = Math.max(-1, Math.min(1, s)) * 32767;
       }
       B.stats.lastPeak = peak;
+      // Page-playback tap is only a fallback: if remote WebRTC tracks exist, use those (avoids double audio).
+      if (tapIn) tapIn.gain.value = B.stats.remoteTracks > 0 ? 0 : 1;
       if (B.captureEnabled && typeof window.__claudeAudioIn === "function") {
         B.stats.capturedFrames++;
         window.__claudeAudioIn(b64FromBuf(out.buffer), peak);
@@ -63,6 +68,29 @@
       B.stats.remoteTracks++;
       track.addEventListener("ended", () => { try { src.disconnect(); } catch (e) {} B.stats.remoteTracks--; });
     } catch (e) { console.warn("[claude] attach failed", e); }
+  }
+
+  // ---- Zoom fallback: tap what the page itself plays (other participants' voices) ----
+  // Zoom's web client can decode audio in WebAssembly and play it through WebAudio, which never shows up
+  // as a remote WebRTC track. Anything the page routes to its speakers is also routed (copied) to us.
+  // Our own context is excluded, so Claumeet's voice is never captured back.
+  if (IS_ZOOM && window.AudioNode && window.AudioDestinationNode) {
+    const origConnect = AudioNode.prototype.connect;
+    const taps = new WeakMap();
+    AudioNode.prototype.connect = function (dest, ...rest) {
+      const r = origConnect.call(this, dest, ...rest);
+      try {
+        if (dest instanceof AudioDestinationNode && this.context !== ctx) {
+          let t = taps.get(this.context);
+          if (!t) {
+            t = this.context.createMediaStreamDestination(); taps.set(this.context, t);
+            ensure(); const src = ctx.createMediaStreamSource(t.stream); src.connect(tapIn); B.stats.pageTaps++;
+          }
+          origConnect.call(this, t);
+        }
+      } catch (e) { /* never break the page's audio */ }
+      return r;
+    };
   }
 
   // ---- Remote audio capture via RTCPeerConnection track events ----
@@ -118,6 +146,21 @@
   function text(el) { return (el && (el.innerText || el.textContent) || "").trim(); }
   B.scanChat = () => {
     const out = [];
+    if (IS_ZOOM) {
+      // Zoom web client (MOCK-tested only): message rows with a sender and a text element.
+      document.querySelectorAll("[class*='chat-message__container'], [class*='chat-item__chat-info'], [data-chat-message]")
+        .forEach((el) => {
+          if (B.seenEls.has(el)) return;
+          const t = el.querySelector("[class*='text-content'], [class*='chat-message__text'], [data-chat-text]");
+          if (!t || !text(t)) return;
+          B.seenEls.add(el);
+          const row = el.closest("[class*='chat-item'], [data-chat-row]") || el;
+          const s = row.querySelector("[class*='chat-item__sender'], [class*='sender'], [data-chat-sender]");
+          out.push({ id: "z" + (++B.stats.zoomMsgs), sender: text(s).slice(0, 80),
+                     text: text(t).slice(0, 2000) });
+        });
+      return out;
+    }
     document.querySelectorAll("[data-message-id]").forEach((el) => {
       const id = el.getAttribute("data-message-id");
       if (!id || B.seenMsgs.has(id)) return;
@@ -132,6 +175,14 @@
   };
   B.scanParticipants = () => {
     const now = {};
+    if (IS_ZOOM) {
+      document.querySelectorAll("[class*='participants-item__display-name'], [class*='video-avatar__avatar-name'], " +
+                                "[data-participant-name]").forEach((el) => {
+        const name = (el.getAttribute("data-participant-name") || text(el)).split("\n")[0].replace(/\s*\((host|me|guest)[^)]*\)\s*$/i, "");
+        if (name && name.length < 80) now["z:" + name] = name;
+      });
+      return now;
+    }
     document.querySelectorAll("[data-participant-id]").forEach((el) => {
       const id = el.getAttribute("data-participant-id");
       const nameEl = el.querySelector("[data-self-name], .zWGUib, .XEazBc, .notranslate");
@@ -148,10 +199,31 @@
     }
     return false;
   }
+  const CHAT_BOX = IS_ZOOM
+    ? "[contenteditable='true'][aria-label*='chat' i], textarea[aria-label*='chat' i], [contenteditable='true'][placeholder*='message' i], textarea[placeholder*='message' i]"
+    : "textarea[aria-label*='message' i], textarea[aria-label*='মেসেজ']";
   B.detect = () => {
     const body = (document.body && document.body.innerText || "").slice(0, 20000);
-    return {
-      url: location.href.split("?")[0],
+    const common = {
+      url: location.href.split("?")[0], platform: IS_ZOOM ? "zoom" : "meet",
+      remoteTracks: B.stats.remoteTracks, pageTaps: B.stats.pageTaps, peak: B.stats.lastPeak, queued: B.queued(),
+      chatOpen: [...document.querySelectorAll(CHAT_BOX)].some((t) => t.offsetParent !== null),
+      // A person has to act (sign in / passcode / CAPTCHA). Claumeet only tells the owner.
+      needsOwner: !!document.querySelector("iframe[src*='recaptcha'], iframe[src*='hcaptcha'], iframe[title*='captcha' i]") ||
+                  /enter (the )?(meeting )?passcode|sign in to join|verify you are human|i'm not a robot/i.test(body),
+    };
+    if (IS_ZOOM) {
+      return Object.assign(common, {
+        inCall: hasButton(/^\s*leave\s*$|leave meeting/i) && !/please wait, the meeting host will let you in/i.test(body),
+        askToJoin: hasButton(/^\s*join\s*$/i),
+        waiting: /host will let you in soon|waiting for the host to start|please wait, the meeting host/i.test(body),
+        denied: /host has denied|you can.t join this meeting|has been locked|meeting is locked/i.test(body),
+        removed: /you have been removed|host has removed you|removed you from the meeting/i.test(body),
+        ended: /this meeting has been ended|meeting has ended|the host has ended|you left the meeting/i.test(body),
+        needsSignIn: /sign in to join|only authenticated users can join/i.test(body),
+      });
+    }
+    return Object.assign(common, {
       inCall: hasButton(/leave call|কল ছেড়ে|কল থেকে বেরিয়ে/i),
       askToJoin: hasButton(/^\s*ask to join|join now|যোগ দিতে বলুন|এখনই যোগ দিন/i),
       waiting: /asking to be let in|wait until a meeting host|someone will let you in|আপনাকে যোগ দেওয়ার অনুমতি/i.test(body),
@@ -159,9 +231,6 @@
       removed: /you('ve| have) been removed|removed you from/i.test(body),
       ended: /you left the meeting|the call has ended|meeting has ended|call ended|return to home screen/i.test(body),
       needsSignIn: /sign in|choose an account/i.test(body) && location.hostname.startsWith("accounts."),
-      remoteTracks: B.stats.remoteTracks, peak: B.stats.lastPeak, queued: B.queued(),
-      chatOpen: [...document.querySelectorAll("textarea[aria-label*='message' i], textarea[aria-label*='মেসেজ']")]
-        .some((t) => t.offsetParent !== null),
-    };
+    });
   };
 })();

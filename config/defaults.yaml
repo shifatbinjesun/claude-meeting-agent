@@ -5,7 +5,7 @@ timezone: Asia/Dhaka
 
 identity:
   display_name: "Claumeet (AI)"
-  # Name variants the agent answers to (Bangla + transliterations + common ASR spellings).
+  # Name variants the agent answers to (Latin, Bangla and other scripts + common speech-recognition spellings).
   name_variants: ["claumeet", "claumit", "klaumeet", "klaumit", "clomeet", "clau meet", "claw meet", "clo meet", "cloud meet", "claude meet", "clau mit", "claude", "ক্লমিট", "ক্লামিট", "ক্লাউমিট", "ক্লমীট", "ক্লামীট", "ক্লো মিট", "ক্লাউড মিট", "ক্লড"]
 
 dashboard:
@@ -14,7 +14,7 @@ dashboard:
   session_minutes: 720
 
 meet:
-  allowed_hosts: ["meet.google.com"]
+  allowed_hosts: ["meet.google.com", "zoom.us"]   # zoom.us also allows *.zoom.us
   locale: en-US          # pin browser UI locale so text locators are stable
   join_mode: supervised  # supervised: you click "Ask to join" yourself; assisted: agent clicks it
   headless: false
@@ -37,6 +37,9 @@ providers:
 
 conversation:
   mode: automatic            # automatic | casual | professional | educational | serious | quiet
+  language: auto             # auto = reply in the speaker's language; or a default such as bn, en, hi, es, ar (see brain/languages.py)
+  style: bangladeshi         # bangladeshi = Bangladeshi flavour when speaking Bangla; global = neutral native style in every language
+  disclosure_languages: ["en", "bn"]   # chat AI-disclosure is posted in these languages (English always first)
   humor: 0.6                 # 0..1
   initiative: 0.4            # 0..1 how often to speak unprompted
   energy: 0.6

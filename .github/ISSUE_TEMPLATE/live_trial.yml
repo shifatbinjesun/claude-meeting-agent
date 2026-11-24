@@ -1,0 +1,27 @@
+name: Live trial report
+description: You tried Claumeet in a real, consented Google Meet or Zoom call
+labels: [live-trial]
+body:
+  - type: markdown
+    attributes: {value: "Thank you! Only report meetings where everyone knew an AI was present. Don't include meeting links, names or recordings."}
+  - type: dropdown
+    id: platform
+    attributes: {label: Platform, options: [Google Meet, Zoom]}
+    validations: {required: true}
+  - type: input
+    id: language
+    attributes: {label: Language(s) spoken}
+  - type: checkboxes
+    id: worked
+    attributes:
+      label: What worked?
+      options:
+        - label: Joining and admission
+        - label: Hearing people (it reacted to speech)
+        - label: Speaking (people heard Claumeet)
+        - label: Chat notice posted
+        - label: Stop listening / opt-out
+        - label: Leave
+  - type: textarea
+    id: notes
+    attributes: {label: Notes (latency, voice quality, anything that broke)}

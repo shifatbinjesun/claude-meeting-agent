@@ -24,7 +24,7 @@ from .audio.vad import EnergyVAD
 from .authority import injection
 from .authority.owner import OwnerAuth
 from .authority.policy import ActionProposal, Channel, Decision, Policy
-from .brain import addressing, persona
+from .brain import addressing, languages, persona
 from .brain.arbiter import ArbiterSettings, TurnArbiter, Verdict
 from .brain.context import SessionContext
 from .config import Config
@@ -89,6 +89,7 @@ class Supervisor:
         self.vad = EnergyVAD()
         self.browser = None
         self.browser_factory = None      # tests inject a factory; production uses MeetBrowser
+        self._owner_needed_hinted = False
         self.live = None
         self.text = None
         self.tts = None
@@ -243,13 +244,14 @@ class Supervisor:
         if self.state.state not in (S.IDLE, S.ENDED, S.FAILED):
             return {"ok": False, "reason": f"busy:{self.state.state.value}"}
         try:
-            url = meet_url.normalize(link, tuple(self.cfg.get("meet.allowed_hosts", ["meet.google.com"])))
+            url = meet_url.normalize(link, self._allowed_hosts())
         except meet_url.InvalidMeetLink as e:
             return {"ok": False, "reason": str(e)}
         if self.state.state in (S.ENDED, S.FAILED):
             self.state.transition(S.IDLE, "reset")
         self.state.transition(S.PREFLIGHT, f"join_by:{approved_by}")
         self.state.removed_or_denied = False
+        self._owner_needed_hinted = False
         self.meeting_url = url
         self.state.meeting_id = meet_url.meeting_id(url)
         self.ctx.clear()
@@ -260,6 +262,9 @@ class Supervisor:
         self.spawn(self._run_meeting(url), "meeting")
         return {"ok": True, "meeting": meet_url.redacted(url)}
 
+    def _allowed_hosts(self) -> tuple[str, ...]:
+        return tuple(self.cfg.get("meet.allowed_hosts", list(meet_url.DEFAULT_HOSTS)))
+
     async def _run_meeting(self, url: str) -> None:
         from .meet.browser import MeetBrowser
         self._build_providers()
@@ -268,6 +273,7 @@ class Supervisor:
                                    locale=self.cfg.get("meet.locale", "en-US"),
                                    headless=bool(self.cfg.get("meet.headless", False)),
                                    display_name=self.cfg.get("identity.display_name", "Claumeet (AI)"))
+        self.browser.allowed_hosts = self._allowed_hosts()
         try:
             await self.browser.start()
             await self.browser.open_meeting(url)
@@ -281,8 +287,8 @@ class Supervisor:
         if self.cfg.get("meet.join_mode", "supervised") == "assisted":
             await self.browser.request_join()
         else:
-            self.emit("owner_hint", {"text": "Click 'Ask to join' in Claumeet's browser window. The host admits Claumeet."},
-                      private=True)
+            from .meet import platforms
+            self.emit("owner_hint", {"text": platforms.get(meet_url.platform(url)).join_hint}, private=True)
         self.meeting_started = time.time()
         self.spawn(self._watch_meeting(), "watch")
 
@@ -302,6 +308,11 @@ class Supervisor:
                 await self.leave("meeting_ended", click=False)
                 return
             if self.state.state == S.WAITING_ADMISSION:
+                if st.get("needsOwner") and not self._owner_needed_hinted:
+                    self._owner_needed_hinted = True
+                    self.emit("owner_hint", {"text": "The meeting page needs you: sign in, enter the passcode or solve "
+                                                     "the check in Claumeet's browser window. Claumeet won't do that."},
+                              private=True)
                 if st.get("inCall"):
                     await self._on_admitted()
                 elif time.time() - t0 > timeout:
@@ -343,6 +354,8 @@ class Supervisor:
         self.state.transition(S.JOINED_MUTED, "admitted")
         self.emit("joined", {"meeting": meet_url.redacted(self.meeting_url)})
         await self.browser.set_gen(self.state.generation)
+        if hasattr(self.browser, "join_audio"):
+            await self.browser.join_audio()
         await self.browser.open_chat()
         self.state.transition(S.CONSENT_PENDING, "awaiting_disclosure")
         if not self.cfg.get("consent.require_before_processing", True):
@@ -360,7 +373,7 @@ class Supervisor:
             self.consent.participant_joined(pid, name)
             self.consent.notified(pid)
         if self.browser and self.cfg.get("consent.announce_on_join", True):
-            await self.browser.send_chat(persona.chat_disclosure(), 0)
+            await self.browser.send_chat(self._chat_disclosure(), 0)
         self.state.controls.consent_granted = True
         await self.browser.set_capture(True)
         await self.browser.set_meet_mic(True)
@@ -372,7 +385,7 @@ class Supervisor:
             await asyncio.sleep(1.5)
             await self.live.send_text(
                 "[system event] You just joined and the owner confirmed disclosure. Introduce yourself in one or "
-                "two short sentences in Bangla: you are Claumeet, an AI, here with the owner's permission, and anyone "
+                f"two short sentences in {persona.intro_language(self.cfg.section('conversation'))}: you are Claumeet, an AI, here with the owner's permission, and anyone "
                 "can ask you to stop listening. Light, friendly.", True)
             self.arbiter.st.last_addressed = time.time()   # the intro is an invited turn
         elif not self.live:
@@ -445,7 +458,7 @@ class Supervisor:
         pending = self.consent.pending_names()
         if names and not (self.live and self.live.connected):
             # No voice available: greet + disclose in chat so late joiners are still informed.
-            if await self._send_chat_checked(f"স্বাগতম {', '.join(n[:40] for n in names)}! " + persona.chat_disclosure(),
+            if await self._send_chat_checked(languages.welcome(self.cfg.section("conversation"), names) + " " + self._chat_disclosure(),
                                              Channel.SYSTEM, notice=True):
                 for pid, _ in pending:
                     self.consent.notified(pid)
@@ -481,7 +494,7 @@ class Supervisor:
             self.decision("consent", "pause", "participant_opted_out_in_chat")
             self.pause_processing(True, "participant_opt_out")
             if self.browser:
-                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claumeet paused listening.)", 0)
+                await self.browser.send_chat(languages.paused_notice(self.cfg.section("conversation")), 0)
             return
         if not self.consent.allowed("chat"):
             return
@@ -699,8 +712,7 @@ class Supervisor:
             self.decision("consent", "pause", "participant_opted_out_by_voice")
             self.pause_processing(True, "participant_opt_out")
             if self.browser:
-                await self.browser.send_chat("ঠিক আছে, শোনা বন্ধ করলাম। 🙏 (Claumeet paused listening; the owner can "
-                                             "resume.)", 0)
+                await self.browser.send_chat(languages.paused_notice(self.cfg.section("conversation"), True), 0)
         if obs["question"] and obs["addressed"]:
             self.brain.add_question(self.state.meeting_id, "voice", text, "voice")
         if injection.suspicious(text):
@@ -866,8 +878,8 @@ class Supervisor:
         mem = "\n".join(f"- [{h['domain']}] {h['title']}: {h['body'][:300]}" for h in hits)
         try:
             ans = await self.text.generate(
-                "You are Claumeet, the owner's private assistant during a meeting. Answer the owner briefly in their "
-                "language (Bangla/Banglish/English). This answer is private and will not be spoken.",
+                "You are Claumeet, the owner's private assistant during a meeting. Answer the owner briefly in the "
+                "language they wrote in. This answer is private and will not be spoken.",
                 f"Meeting so far:\n{self.ctx.recent_text(40)}\n\nOwner memory:\n{mem}\n\nOwner asks: {text}",
                 max_tokens=500)
         except Exception as e:
@@ -895,14 +907,29 @@ class Supervisor:
         self.emit("vision", {"text": ans}, private=True)
         return {"ok": True, "text": ans}
 
+    def _chat_disclosure(self) -> str:
+        return persona.chat_disclosure(list(self.cfg.get("conversation.disclosure_languages", ["en", "bn"]) or []))
+
     def update_conversation(self, values: dict) -> dict:
         allowed = {"mode", "humor", "initiative", "energy", "response_sentences", "min_unsolicited_gap_seconds",
-                   "max_consecutive_turns", "chat_per_minute", "greet_newcomers"}
+                   "max_consecutive_turns", "chat_per_minute", "greet_newcomers", "language", "style",
+                   "disclosure_languages"}
         clean = {}
         for k, v in values.items():
             if k not in allowed:
                 continue
-            if k == "mode":
+            if k == "language":
+                if not languages.valid(str(v)):
+                    return {"ok": False, "reason": "bad_language"}
+                clean[k] = str(v)
+            elif k == "style":
+                if v not in persona.STYLES:
+                    return {"ok": False, "reason": "bad_style"}
+                clean[k] = v
+            elif k == "disclosure_languages":
+                codes = [c for c in (v if isinstance(v, list) else []) if isinstance(c, str) and c in languages.LANGUAGES]
+                clean[k] = (["en"] + [c for c in dict.fromkeys(codes) if c != "en"])[:6]
+            elif k == "mode":
                 if v not in persona.MODE_NOTES:
                     return {"ok": False, "reason": "bad_mode"}
                 clean[k] = v

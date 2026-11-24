@@ -143,7 +143,7 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
 
     @app.get("/favicon.ico")
     async def favicon():
-        return Response(status_code=204)
+        return FileResponse(STATIC / "logo.png", media_type="image/png")
 
     @app.get("/static/{name}")
     async def static(name: str):
@@ -199,21 +199,8 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
         return {"ok": True}
 
     # ---------- first-run setup wizard ----------
-    import json as _json
-
-    from .. import paths as _paths
-    setup_file = _paths.data_dir() / "setup.json"
-
-    def setup_state() -> dict:
-        try:
-            return _json.loads(setup_file.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-
-    def save_setup(**kw) -> None:
-        st = setup_state()
-        st.update(kw)
-        setup_file.write_text(_json.dumps(st), encoding="utf-8")
+    from .. import setup_state as _setup
+    setup_state, save_setup = _setup.load, _setup.save
 
     @app.get("/api/setup")
     async def setup_status(request: Request):
@@ -298,6 +285,12 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
     async def conv(values: dict[str, Any], request: Request):
         session(request)
         return await sup.owner_command("change_persona", values, verified=True)
+
+    @app.get("/api/languages")
+    async def langs(request: Request):
+        session(request, False)
+        from ..brain import languages
+        return [{"code": k, "name": v[0], "native": v[1]} for k, v in languages.LANGUAGES.items()]
 
     @app.post("/api/settings/conversation/reset")
     async def conv_reset(request: Request):

@@ -1,28 +1,27 @@
-CLAUDE MEETING AGENT - WHAT YOU NEED (all free)
+CLAUMEET - WHAT YOU NEED (all free)
 
-Claumeet is an AI that joins your Google Meet calls, openly says it is an AI,
-and chats in Bangla / Banglish / English. It runs on THIS PC.
+Claumeet is an AI that joins your Google Meet and Zoom calls, openly says it is
+an AI, and talks in the meeting's language (Bangla, English and many more).
+It runs on THIS PC.
 
 You will need:
 
 1) A separate Google account for Claumeet  (free, 2 minutes)
-   - Create it at:  https://accounts.google.com/signup
+   - This installer helps you create it and sign it in, right after the install.
    - Name it so people can see it is an AI, for example "Claumeet (AI)".
    - Do NOT use your personal account.
 
 2) A free Gemini API key  (free, 1 minute)
-   - Open:  https://aistudio.google.com/apikey
-   - Sign in with any Google account, click "Create API key", copy it.
-   - Keep billing OFF. Claumeet only uses the free tier and never upgrades.
-   - You paste the key into the Claumeet Control Center later (not now).
+   - The installer shows you where to get it (https://aistudio.google.com/apikey)
+     and lets you paste it. Keep billing OFF: Claumeet only uses the free tier.
 
-3) Google Chrome  (the installer offers to install it if missing)
+3) Google Chrome and Python 3.12
+   - If either is missing, the installer installs it for you (official winget packages).
 
 4) About 1 GB of free disk space and 8 GB of RAM.
 
 What this installer does:
   - Installs only for your Windows user. No administrator rights, no drivers.
-  - Installs Python 3.12 for your user if needed (official Microsoft winget package).
   - Downloads exact, checksum-verified library versions.
   - Adds a "Claumeet Control Center" shortcut and opens it when finished.
 It never changes system settings, audio devices or security settings,

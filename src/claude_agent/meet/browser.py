@@ -1,4 +1,4 @@
-"""Playwright adapter for Claumeet's dedicated Google Meet browser.
+"""Playwright adapter for Claumeet's dedicated meeting browser (Google Meet and Zoom's web client).
 
 * Dedicated persistent profile (never the owner's everyday cookies).
 * Mic replaced by the in-page bridge; physical devices replaced by Chrome's fake devices; camera refused.
@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Awaitable, Callable
 
 from .. import paths
+from . import platforms
 from . import url as meet_url
 
 log = logging.getLogger(__name__)
@@ -74,6 +75,8 @@ class MeetBrowser:
         self.demo_page = None
         self.capabilities: dict[str, bool | str] = {}
         self._chat_last = 0.0
+        self.plat = platforms.MEET
+        self.allowed_hosts: tuple[str, ...] = meet_url.DEFAULT_HOSTS
 
     # ---------- lifecycle ----------
     async def start(self) -> None:
@@ -85,7 +88,6 @@ class MeetBrowser:
         if chrome:
             kw["executable_path"] = chrome
         self.ctx = await self._pw.chromium.launch_persistent_context(**kw)
-        await self.ctx.grant_permissions(["microphone"], origin="https://meet.google.com")
         await self.ctx.add_init_script(BRIDGE_JS)
         await self.ctx.expose_binding("__claudeAudioIn", self._audio_binding)
         self.page = self.ctx.pages[0] if self.ctx.pages else await self.ctx.new_page()
@@ -110,7 +112,14 @@ class MeetBrowser:
 
     # ---------- navigation & join ----------
     async def open_meeting(self, link: str) -> str:
-        safe = meet_url.normalize(link)
+        safe = meet_url.normalize(link, self.allowed_hosts)
+        self.plat = platforms.get(meet_url.platform(safe))
+        self.capabilities["platform"] = self.plat.key
+        origin = "https://" + safe.split("/")[2]
+        try:   # our own fake mic only; the physical microphone is never opened
+            await self.ctx.grant_permissions(["microphone"], origin=origin)
+        except Exception:
+            pass
         await self.page.goto(safe, wait_until="domcontentloaded", timeout=45000)
         await asyncio.sleep(2)
         await self._prejoin_setup()
@@ -129,19 +138,30 @@ class MeetBrowser:
     async def _prejoin_setup(self) -> None:
         # Guest name field (only shown when not signed in and host allows guests).
         try:
-            name_box = self.page.get_by_role("textbox", name=re.compile(r"your name|আপনার নাম", re.I))
+            name_box = self.page.get_by_role("textbox", name=re.compile(self.plat.name_box, re.I))
             if await name_box.count():
                 await name_box.first.fill(self.display_name)
                 self.capabilities["guest_join"] = True
         except Exception:
             pass
         # Camera off (it is refused anyway), mic muted before join.
-        await self._click_if(r"turn off camera|ক্যামেরা বন্ধ")
-        await self._click_if(r"turn off microphone|মাইক্রোফোন বন্ধ")
+        await self._click_if(self.plat.cam_off)
+        await self._click_if(self.plat.mic_off)
 
     async def request_join(self) -> bool:
-        """Assisted mode only: press 'Ask to join' / 'Join now'. Admission remains the host's decision."""
-        return await self._click_if(r"^\s*(ask to join|join now)|যোগ দিতে বলুন|এখনই যোগ দিন", 3000)
+        """Assisted mode only: press 'Ask to join' / 'Join'. Admission remains the host's decision."""
+        return await self._click_if(self.plat.request_join, 3000)
+
+    async def join_audio(self) -> bool:
+        """Zoom's web client asks to 'Join Audio by Computer' after admission (uses our in-page mic)."""
+        if not self.plat.join_audio:
+            return True
+        for _ in range(5):
+            if await self._click_if(self.plat.join_audio, 3000):
+                self.capabilities["audio_joined"] = True
+                return True
+            await asyncio.sleep(1)
+        return False
 
     async def detect(self) -> dict:
         try:
@@ -155,8 +175,8 @@ class MeetBrowser:
     async def set_meet_mic(self, on: bool) -> bool:
         """Toggle Meet's own mic button (shows a truthful muted indicator to everyone)."""
         if on:
-            return await self._click_if(r"turn on microphone|মাইক্রোফোন চালু")
-        return await self._click_if(r"turn off microphone|মাইক্রোফোন বন্ধ")
+            return await self._click_if(self.plat.mic_on)
+        return await self._click_if(self.plat.mic_off)
 
     # ---------- voice out ----------
     async def play(self, pcm: bytes, rate: int, gen: int) -> float:
@@ -175,7 +195,7 @@ class MeetBrowser:
         if st.get("chatOpen"):
             self.capabilities["chat"] = True
             return True
-        ok = await self._click_if(r"chat with everyone|^chat$|সবার সাথে চ্যাট")
+        ok = await self._click_if(self.plat.chat_open)
         self.capabilities["chat"] = ok or bool((await self.detect()).get("chatOpen"))
         return bool(self.capabilities["chat"])
 
@@ -190,9 +210,9 @@ class MeetBrowser:
             return False
         if not await self.open_chat():
             return False
-        box = self.page.locator("textarea[aria-label*='message' i], textarea[aria-label*='মেসেজ']").first
+        box = self.page.locator(self.plat.chat_box).first
         try:
-            if await box.is_disabled():
+            if await box.is_disabled() or await box.get_attribute("contenteditable") == "false":
                 self.capabilities["chat"] = "restricted_by_host"
                 return False
             await box.fill(text[:500])
@@ -210,7 +230,7 @@ class MeetBrowser:
             return {}
 
     async def react(self, emoji: str) -> bool:
-        if not await self._click_if(r"send a reaction|reactions|প্রতিক্রিয়া"):
+        if not await self._click_if(self.plat.react):
             self.capabilities["reactions"] = False
             return False
         btn = self.page.get_by_role("button", name=re.compile(re.escape(emoji)))
@@ -224,7 +244,11 @@ class MeetBrowser:
         return False
 
     async def leave(self) -> bool:
-        return await self._click_if(r"leave call|কল ছেড়ে", 3000)
+        ok = await self._click_if(self.plat.leave, 3000)
+        if ok and self.plat.leave_confirm:
+            await asyncio.sleep(0.5)
+            await self._click_if(self.plat.leave_confirm, 3000)
+        return ok
 
     # ---------- vision (Claumeet's own meeting tab only) ----------
     async def screenshot_meeting(self) -> bytes:

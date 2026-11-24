@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fake Zoom web client (test fixture)</title></head>
+<body>
+<!-- MOCK of the Zoom web-client states used by the adapter. It is NOT Zoom; it exists only so the adapter's
+     state detection, audio tap, chat and roster logic can be exercised offline. -->
+<div id="prejoin">
+  <input aria-label="Your Name">
+  <button aria-label="Mute" id="mic">Mute</button>
+  <button aria-label="Stop Video">Stop Video</button>
+  <button id="join">Join</button>
+</div>
+<div id="wait" hidden>Please wait, the meeting host will let you in soon.</div>
+<div id="call" hidden>
+  <div class="video-avatar__avatar-name">Rifat Hasan</div>
+  <button id="audio">Join Audio by Computer</button>
+  <button aria-label="open the chat panel" id="chatbtn">Chat</button>
+  <button id="leave">Leave</button>
+  <div id="chatpanel" hidden>
+    <div id="msgs"></div>
+    <div contenteditable="true" aria-label="Type message here, chat to everyone" id="box"></div>
+  </div>
+</div>
+<div id="confirm" hidden><button id="leave2">Leave Meeting</button></div>
+<div id="ended" hidden>This meeting has been ended by host</div>
+<script>
+const $ = (s) => document.querySelector(s);
+let audioCtx = null;
+function addMsg(sender, text) {
+  const row = document.createElement("div"); row.className = "chat-item";
+  const s = document.createElement("span"); s.className = "chat-item__sender"; s.textContent = sender;
+  const c = document.createElement("div"); c.className = "new-chat-message__container";
+  const t = document.createElement("div"); t.className = "new-chat-message__text-content"; t.textContent = text;
+  c.append(t); row.append(s, c); $("#msgs").append(row);
+}
+$("#mic").onclick = () => { const m = $("#mic"); const on = m.getAttribute("aria-label") === "Unmute";
+  m.setAttribute("aria-label", on ? "Mute" : "Unmute"); m.textContent = on ? "Mute" : "Unmute"; };
+$("#join").onclick = () => { $("#prejoin").hidden = true; $("#wait").hidden = false;
+  setTimeout(() => { $("#wait").hidden = true; $("#call").hidden = false; $("#call").append($("#mic")); }, 1200); };
+// Like Zoom's web client: other people's voices are played by the page through WebAudio (not a WebRTC track).
+$("#audio").onclick = async () => {
+  await navigator.mediaDevices.getUserMedia({ audio: true });
+  audioCtx = new AudioContext(); const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+  g.gain.value = 0.3; o.frequency.value = 440; o.connect(g); g.connect(audioCtx.destination); o.start();
+  $("#audio").remove();
+};
+$("#chatbtn").onclick = () => { $("#chatpanel").hidden = false; };
+$("#box").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addMsg("Me", $("#box").textContent); $("#box").textContent = ""; } });
+$("#leave").onclick = () => { $("#confirm").hidden = false; };
+$("#leave2").onclick = () => { $("#call").hidden = true; $("#confirm").hidden = true; $("#ended").hidden = false; };
+window.fake = {
+  addMsg,
+  join(name) { const d = document.createElement("div"); d.className = "video-avatar__avatar-name"; d.textContent = name; $("#call").prepend(d); },
+};
+</script>
+</body></html>

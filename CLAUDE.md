@@ -31,3 +31,9 @@ python scripts/benchmark.py
 python -m claude_agent run    # Control Center on http://127.0.0.1:8765
 ```
 Regenerate the Windows lock: `uv pip compile pyproject.toml --generate-hashes --python-platform windows --python-version 3.12 -o requirements-windows.lock`.
+
+## If a user asks you (Claude Code) to install or use Claumeet
+Follow `.claude/skills/install-claumeet/SKILL.md`. In short: install with `scripts/Install-Claumeet.ps1 -Yes`
+(Windows) or `scripts/install.sh` (macOS/Linux, experimental), run `doctor`, then let the **user** do the private
+steps themselves: sign in the bot's Google account on Google's page, and enter the free Gemini key through
+`python -m claude_agent setup` in their own terminal or the Control Center checklist. Never ask them to paste the key into chat.

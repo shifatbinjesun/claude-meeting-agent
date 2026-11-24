@@ -199,8 +199,26 @@
     [["response_sentences", "Response length (sentences)", 1, 8], ["min_unsolicited_gap_seconds", "Min gap between unprompted turns (s)", 5, 180], ["max_consecutive_turns", "Max consecutive turns", 1, 8], ["chat_per_minute", "Chat messages per minute", 0, 10]].forEach(([k, label, mn, mx]) => {
       const l = el("label", "", `${label}: ${c[k]}`); const i = el("input"); i.type = "range"; i.min = mn; i.max = mx; i.step = 1; i.value = c[k];
       i.onchange = async () => { await post("/api/settings/conversation", { [k]: Number(i.value) }); l.firstChild.textContent = `${label}: ${i.value}`; }; l.append(i); f.append(l); });
+    await loadLanguages(c);
     const p = await api("/api/pronunciations"); const box = $("#prons"); box.replaceChildren();
     p.forEach((x) => { const d = el("div", "", `${x.term} → ${x.spoken} `); const del = el("button", "btn", "Delete"); del.onclick = async () => { await api("/api/pronunciations/" + encodeURIComponent(x.term), { method: "DELETE" }); loadPersona(); }; d.append(del); box.append(d); });
+  }
+  async function loadLanguages(c) {
+    const langs = await api("/api/languages");
+    const saveConv = async (v) => { const r = await post("/api/settings/conversation", v); lastStatus = await api("/api/status"); return r; };
+    const sel = $("#lang-sel"); sel.replaceChildren();
+    sel.append(new Option("Auto: reply in the speaker's language", "auto"));
+    langs.forEach((l) => sel.append(new Option(`${l.native} (${l.name})`, l.code)));
+    sel.value = c.language || "auto"; sel.onchange = () => saveConv({ language: sel.value });
+    const st = $("#style-sel"); st.value = c.style || "bangladeshi"; st.onchange = () => saveConv({ style: st.value });
+    const box = $("#disc-langs"); box.replaceChildren();
+    const chosen = new Set(c.disclosure_languages || ["en", "bn"]);
+    langs.forEach((l) => {
+      const lab = el("label", ""); const cb = el("input"); cb.type = "checkbox"; cb.checked = chosen.has(l.code);
+      cb.disabled = l.code === "en";
+      cb.onchange = () => { cb.checked ? chosen.add(l.code) : chosen.delete(l.code); saveConv({ disclosure_languages: [...chosen] }); };
+      lab.append(cb, " " + l.native); box.append(lab);
+    });
   }
   async function audition(e) {
     e.preventDefault(); $("#aud-info").textContent = "Generating…";

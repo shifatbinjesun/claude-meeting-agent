@@ -189,3 +189,12 @@ async def test_stale_generation_after_reconnect(sup):
     sup.state.bump_generation()
     await sup._play(b"\x00\x00" * 10, gen)
     assert sup.browser.played == []
+
+
+async def test_language_settings_are_validated(sup):
+    assert sup.update_conversation({"language": "klingon"})["reason"] == "bad_language"
+    assert sup.update_conversation({"style": "pirate"})["reason"] == "bad_style"
+    assert sup.update_conversation({"language": "hi", "style": "global",
+                                    "disclosure_languages": ["hi", "xx", "hi", "es"]})["ok"]
+    conv = sup.cfg.section("conversation")
+    assert conv["language"] == "hi" and conv["disclosure_languages"] == ["en", "hi", "es"]

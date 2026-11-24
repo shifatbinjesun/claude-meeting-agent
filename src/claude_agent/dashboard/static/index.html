@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claumeet Control Center</title>
+<link rel="icon" type="image/png" href="/static/logo.png">
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/app.js" defer></script>
 </head>
 <body>
 <div id="login" class="login hidden">
   <div class="card login-card">
+    <img src="/static/logo.png" alt="" class="login-logo" width="64" height="64">
     <h1>Claumeet Control Center</h1>
     <p class="muted">Open the pairing link shown in the Claumeet window on this PC, or sign in with your owner passphrase.</p>
     <form id="login-form">
@@ -23,7 +25,7 @@
 
 <div id="app" class="layout hidden">
   <header class="topbar">
-    <div class="brand"><span class="dot" id="state-dot"></span> Claumeet <span class="muted">Control Center</span></div>
+    <div class="brand"><img src="/static/logo.png" alt="" class="brand-logo" width="28" height="28"> Claumeet <span class="muted">Control Center</span> <span class="dot" id="state-dot" title="Meeting state"></span></div>
     <div class="state-pill" id="state-pill" aria-live="polite">idle</div>
     <button class="btn danger" id="estop" title="Emergency stop (Ctrl+Shift+X)">■ Emergency stop</button>
   </header>
@@ -78,10 +80,10 @@
         <div class="card">
           <h2>Join a meeting</h2>
           <form id="join-form" class="row">
-            <input id="join-url" placeholder="https://meet.google.com/abc-defg-hij" aria-label="Meet link" required>
+            <input id="join-url" placeholder="Google Meet or Zoom link (meet.google.com/… or zoom.us/j/…)" aria-label="Google Meet or Zoom link" required>
             <button class="btn primary" type="submit">Join</button>
           </form>
-          <p class="muted small">Supervised mode: Claumeet's browser opens muted with camera off; you click "Ask to join" and the host admits Claumeet.</p>
+          <p class="muted small">Works with Google Meet and Zoom. Claumeet's browser opens muted with camera off; you click "Ask to join" (Meet) or "Join" (Zoom), and the host admits Claumeet.</p>
           <div id="hint" class="hint hidden" role="status"></div>
           <div class="row wrap">
             <button class="btn" id="consent-btn" disabled>Announce &amp; start listening</button>
@@ -170,6 +172,18 @@
           <h2>Sliders</h2>
           <form id="persona-form" class="sliders"></form>
           <div class="row"><button class="btn" id="persona-reset">Restore defaults</button></div>
+        </div>
+        <div class="card">
+          <h2>Language</h2>
+          <label for="lang-sel">Claumeet speaks</label>
+          <select id="lang-sel"></select>
+          <label for="style-sel">Style</label>
+          <select id="style-sel">
+            <option value="bangladeshi">Bangladeshi flavour (Dhakaiya/Banglish when speaking Bangla)</option>
+            <option value="global">Neutral native style in every language</option>
+          </select>
+          <p class="small muted">AI notice in meeting chat is posted in (English is always included):</p>
+          <div id="disc-langs" class="row wrap small"></div>
         </div>
         <div class="card">
           <h2>Voice audition <span class="muted small">(plays here only, never in a meeting)</span></h2>

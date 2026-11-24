@@ -176,3 +176,33 @@ def test_setup_wizard_flow(env):
     st = c.get("/api/setup").json()
     assert st["steps"][0]["done"] is True
     assert c.post("/api/setup/mark", json={"dismissed": True}, headers={"Origin": ORIGIN}).status_code == 403
+
+
+def test_languages_logo_and_language_settings(env):
+    sup, c = env
+    h = paired(sup, c)
+    langs = c.get("/api/languages").json()
+    assert {"code": "bn", "name": "Bangla", "native": "বাংলা"} in langs and len(langs) >= 20
+    assert c.get("/favicon.ico").headers["content-type"] == "image/png"
+    assert c.get("/static/logo.png").status_code == 200
+    assert c.post("/api/settings/conversation", json={"language": "ar"}, headers=h).json()["ok"]
+    assert sup.cfg.get("conversation.language") == "ar"
+
+
+def test_cli_setup_mark(tmp_path, monkeypatch):
+    monkeypatch.setenv("CLAUDE_AGENT_HOME", str(tmp_path))
+    from claude_agent import main, setup_state
+    main.cli(["setup-mark", "google_signed_in"])
+    assert setup_state.load() == {"google_signed_in": True}
+
+
+def test_cli_set_key_from_env_rejects_empty_and_clears_var(tmp_path, monkeypatch):
+    import os
+
+    import pytest as _pt
+    monkeypatch.setenv("CLAUDE_AGENT_HOME", str(tmp_path))
+    monkeypatch.setenv("CLAUMEET_INSTALL_KEY", "   ")
+    from claude_agent import main
+    with _pt.raises(SystemExit) as e:
+        main.cli(["set-key", "--from-env", "CLAUMEET_INSTALL_KEY"])
+    assert e.value.code == 2 and "CLAUMEET_INSTALL_KEY" not in os.environ
