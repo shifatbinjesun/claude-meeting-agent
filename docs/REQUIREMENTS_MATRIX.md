@@ -6,8 +6,8 @@ Last updated 2026-11-24. "Mock" means the test used a fixture in place of the re
 
 | Area | Requirement | Status | Evidence |
 |---|---|---|---|
-| Setup | Per-user install, no admin, hash-pinned deps, actionable errors | impl-unverified | `scripts/Install-Claude.ps1`, `requirements-windows.lock`. Not run on Windows yet |
-| Setup | Doctor (Python, Chrome, RAM, disk, port, key, network, sleep) | verified on Linux / impl-unverified on Windows | `claude-agent doctor`, `Doctor-Claude.ps1` |
+| Setup | Per-user install, no admin, hash-pinned deps, actionable errors | partly verified | Lockfile install + 245 tests pass on Windows CI. Scripts parse. Interactive installer not yet run on a desktop |
+| Setup | Doctor (Python, Chrome, RAM, disk, port, key, network, sleep) | verified (Linux + Windows CI) | `claude-agent doctor`, `Doctor-Claude.ps1` |
 | Setup | Key validated server-side, stored in Credential Manager, never shown | verified (logic) | `test_status_never_contains_secret`, `/api/secrets/gemini` |
 | Setup | One-click start/stop, no global policy changes | impl-unverified | `Start-Claude.cmd`, `Stop-Claude.cmd` (graceful stop verified on Linux) |
 | Join | Manual link validation, only Meet host | verified | `test_url.py` (17 cases), `test_join_rejects_non_meet_url` |

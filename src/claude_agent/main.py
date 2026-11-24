@@ -49,7 +49,7 @@ def doctor(as_json: bool = False) -> int:
 
     add("Python", sys.version_info >= (3, 11), platform.python_version(), "Install Python 3.12 from python.org")
     add("OS", True, f"{platform.system()} {platform.release()} ({platform.version()})")
-    add("CPU", True, f"{platform.processor() or platform.machine()} · {psutil.cpu_count(logical=False)} cores / "
+    add("CPU", True, f"{platform.processor() or platform.machine()}, {psutil.cpu_count(logical=False)} cores / "
                      f"{psutil.cpu_count()} threads")
     vm = psutil.virtual_memory()
     add("RAM", vm.total >= 7.5 * 2**30, f"{vm.total / 2**30:.1f} GB total, {vm.available / 2**30:.1f} GB free",

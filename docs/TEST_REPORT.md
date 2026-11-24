@@ -1,7 +1,11 @@
 # Test report
 
 **Date:** 2026-11-24 · **Where:** cloud Linux container (x86_64, 4 vCPU, 16 GB RAM, Python 3.13.18, Chromium 1243 headless).
-**Not tested on the owner's Windows PC yet.** No real Google Meet, Google account or Gemini key was used.
+Also run on **GitHub Actions `windows-latest`** (Windows Server 2025, Python 3.12.10, Google Chrome). The hash-pinned
+`requirements-windows.lock` installed cleanly, **245/245 tests passed on Windows**, including the real-Chromium audio bridge and the
+mock-Meet lifecycle. Doctor ran, the Secret store reported `WinVaultKeyring` (Windows Credential Manager), and all 4 PowerShell
+scripts parse without errors. Windows CI also caught a real bug (missing `tzdata`, so `Asia/Dhaka` didn't resolve), which is now fixed.
+**Not tested on the owner's own PC yet.** No real Google Meet, Google account or Gemini key was used.
 
 ## Commands
 ```
@@ -46,7 +50,7 @@ python scripts/benchmark.py
 2. **Gemini Live conversation, latency p50/p95, interruption on real audio:** add the key, Probe, run the meeting, and read the Provider & Performance latencies (`end_of_input_to_first_audio_ms`).
 3. **Bangladeshi voice quality:** use Personality Studio → audition voices (Charon, Orus, Puck, Fenrir, Iapetus) and have native listeners score them.
 4. **Bengali ASR intent ≥90%:** this needs 30 or more consented recordings.
-5. **Windows installer and the PowerShell scripts:** not executed. PowerShell wasn't available in the build environment.
+5. **Windows installer end-to-end:** the scripts parse and the lockfile installs on Windows CI, but `Install-Claude.cmd` itself (with its prompts and shortcut) hasn't run on a real desktop yet.
 6. **30/60-minute soak, Windows RAM/CPU with real Meet:** watch Overview → App RAM during a long private test.
 
 ## Known limitations
