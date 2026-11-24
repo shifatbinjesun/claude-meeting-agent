@@ -54,6 +54,8 @@ consent:
   require_before_processing: true
   pause_on_new_participant: true
   announce_on_join: true
+  auto_announce: true            # when admitted: post the AI notice, introduce itself out loud, then start listening.
+                                 # false = wait for you to press "Announce & start listening".
 
 memory:
   retain_raw_audio: false

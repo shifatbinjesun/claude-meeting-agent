@@ -50,6 +50,13 @@ Run remotely and by hand: the installer's ExecutionPolicy step was blocked by th
 - **Fix in 0.3.1:** all calls use `v1beta` (`test_client_uses_v1beta`), one retry on 503/timeout, and clear failure
   reasons on the dashboard. Speaking in a real meeting still needs to be re-tested on 0.3.1.
 
+## Auto-talk recheck (2026-11-24, v0.3.2, Linux container)
+- `test_auto_talk_e2e`: real Chromium + real MeetBrowser/bridge + real Supervisor gates, **mock Meet page** and
+  **mock Live model** (connects after 3 s). Without any button press: AI notice posted → Meet mic on → spoken intro
+  played into the in-page mic → a chat message naming Claumeet is forwarded and its reply is played. Ran 3× green.
+- Manual mode (`auto_announce: false`) stays silent and sends nothing to the model until the owner announces.
+- Still unproven: the same path with the real Gemini Live service and a real Meet/Zoom call.
+
 ## Measurements (Linux container, not the target PC)
 | Metric | Value |
 |---|---|

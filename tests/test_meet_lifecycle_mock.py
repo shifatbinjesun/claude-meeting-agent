@@ -41,6 +41,7 @@ def sup(tmp_path, brain):
     cfg = Config.load(user=tmp_path / "none.yaml")
     cfg._data["meet"]["join_mode"] = "assisted"
     cfg._data["meet"]["headless"] = True
+    cfg._data["consent"]["auto_announce"] = False   # these tests drive the manual announce button
     s = Supervisor(cfg, brain=brain, owner=OwnerAuth(store=tmp_path / "o.json"))
 
     def factory(on_audio, on_status, **kw):

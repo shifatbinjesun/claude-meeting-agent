@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.2 (2026-11-24)
+- **Talks by itself after joining.** New *auto-announce* setting (on by default, checkbox on Overview): once the
+  host admits Claumeet, it posts the AI notice in chat, unmutes, introduces itself out loud and starts listening.
+  Turn it off to keep the manual "Announce & start listening" button.
+- **Fix: the spoken intro could be lost.** It was sent 1.5 s after the voice session started; on a slower
+  connection the session wasn't ready and the intro was silently dropped. It now waits for the session (up to 25 s)
+  and tells you on the dashboard if the voice never connects.
+- **Fix: mid-meeting text to the voice model** (intro, greetings, chat addressed to Claumeet) now uses Live
+  "realtime text", which `gemini-3.1-flash-live-preview` needs, falling back to the older call when unsupported.
+- New end-to-end test with a mock Meet page and a mock voice model: the intro and a chat reply both reach the mic.
+
 ## 0.3.1 (2026-11-24)
 - **Fix: Claumeet didn't speak, and chat replies failed.** The first live trial on a real Windows PC found that the
   Gemini client was calling Google's `v1` API, which doesn't serve the free preview models (Live voice and TTS)

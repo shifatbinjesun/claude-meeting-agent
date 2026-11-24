@@ -74,6 +74,7 @@ class GeminiLive:
         self.turn_id = 0
         self._stop = asyncio.Event()
         self._send_lock = asyncio.Lock()
+        self._client_content_only = False
         self.last_input_ts = 0.0
 
     async def run(self, audio_in: asyncio.Queue, emit: Callable[[LiveOutput], Awaitable[None]]) -> None:
@@ -169,9 +170,17 @@ class GeminiLive:
         """Context such as chat messages (already wrapped as untrusted) or verified owner directives."""
         from google.genai import types
         s = self.session
-        if not s:
+        if not s or not self.connected:
             return False
         async with self._send_lock:
+            if turn_complete and not self._client_content_only:
+                # Realtime text works mid-conversation on every Live model (gemini-3.1-flash-live only accepts
+                # send_client_content for seeding initial history) and asks the model to answer now.
+                try:
+                    await s.send_realtime_input(text=text)
+                    return True
+                except Exception:
+                    self._client_content_only = True
             await s.send_client_content(turns=types.Content(role="user", parts=[types.Part(text=text)]),
                                         turn_complete=turn_complete)
         return True

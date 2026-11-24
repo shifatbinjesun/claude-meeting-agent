@@ -28,9 +28,10 @@ function addMsg(sender, text) {
   const m = document.createElement("div"); m.setAttribute("data-message-id", "m" + (++n)); m.textContent = text;
   g.append(m); $("#msgs").append(g);
 }
-$("#mic").onclick = () => { $("#mic").setAttribute("aria-label", "Turn on microphone"); };
+$("#mic").onclick = () => { const m = $("#mic"); const off = m.getAttribute("aria-label") === "Turn off microphone";
+  m.setAttribute("aria-label", off ? "Turn on microphone" : "Turn off microphone"); };
 $("#ask").onclick = () => { $("#prejoin").hidden = true; $("#wait").hidden = false;
-  setTimeout(() => { $("#wait").hidden = true; $("#call").hidden = false; }, 1200); };
+  setTimeout(() => { $("#wait").hidden = true; $("#call").hidden = false; $("#call").append($("#mic")); }, 1200); };
 $("#chatbtn").onclick = () => { $("#chatpanel").hidden = false; };
 $("#box").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addMsg("You", $("#box").value); $("#box").value = ""; } });
 $("#leave").onclick = () => { $("#call").hidden = true; $("#ended").hidden = false; };

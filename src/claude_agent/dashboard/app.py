@@ -286,6 +286,14 @@ def create_app(sup: Supervisor, host: str, port: int, allowed_hosts: set[str] | 
         session(request)
         return await sup.owner_command("change_persona", values, verified=True)
 
+    @app.post("/api/settings/consent")
+    async def consent_settings(values: dict[str, bool], request: Request):
+        session(request)
+        clean = {k: bool(v) for k, v in values.items() if k == "auto_announce"}
+        sup.cfg.update_user("consent", clean, {"auto_announce"})
+        sup.brain.audit("owner", "consent_settings", "allow", f"auto_announce={clean.get('auto_announce')}")
+        return {"ok": True, **clean}
+
     @app.get("/api/languages")
     async def langs(request: Request):
         session(request, False)

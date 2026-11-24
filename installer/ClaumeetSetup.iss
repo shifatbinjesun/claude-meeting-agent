@@ -1,7 +1,7 @@
 ; Claumeet - Windows installer (Inno Setup 6). Per-user, no admin rights.
 #define AppName "Claumeet"
 #ifndef AppVersion
-  #define AppVersion "0.3.1"
+  #define AppVersion "0.3.2"
 #endif
 
 [Setup]

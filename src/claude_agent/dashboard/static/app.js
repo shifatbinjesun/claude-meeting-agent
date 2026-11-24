@@ -52,7 +52,8 @@
     $("#estop").addEventListener("click", estop);
     document.addEventListener("keydown", (e) => { if (e.ctrlKey && e.shiftKey && (e.key === "X" || e.key === "x")) { e.preventDefault(); estop(); } });
     $("#join-form").addEventListener("submit", async (e) => { e.preventDefault();
-      try { const r = await post("/api/join", { url: $("#join-url").value }); toast(r.ok ? "Opening Claumeet's browser… click 'Ask to join' there." : "Not joined: " + (r.reason || ""), !r.ok); } catch (err) { toast(err.message, true); } });
+      try { const r = await post("/api/join", { url: $("#join-url").value }); toast(r.ok ? "Opening Claumeet's browser… click 'Ask to join' (Meet) or 'Join' (Zoom) there." : "Not joined: " + (r.reason || ""), !r.ok); } catch (err) { toast(err.message, true); } });
+    $("#auto-announce").addEventListener("change", async (e) => { await post("/api/settings/consent", { auto_announce: e.target.checked }); });
     $("#consent-btn").addEventListener("click", async () => { const r = await post("/api/consent/grant"); toast(r.ok ? "Disclosure posted. Claumeet is listening." : "Not started: " + r.reason, !r.ok); });
     $("#ask-form").addEventListener("submit", async (e) => { e.preventDefault(); const t = $("#ask-text").value.trim(); if (!t) return;
       addOwnerReply("You", t); $("#ask-text").value = "";
@@ -125,6 +126,7 @@
   }
   function renderStatus(s) {
     lastStatus = s;
+    const aa = $("#auto-announce"); if (aa && document.activeElement !== aa) aa.checked = !!s.auto_announce;
     $("#state-pill").textContent = s.state + (s.controls.output_muted ? " · muted" : "") + (s.controls.processing_paused ? " · paused" : "");
     const dot = $("#state-dot"); dot.className = "dot " + (["listening", "speaking", "thinking"].includes(s.state) ? "live" : ["failed"].includes(s.state) ? "bad" : s.state === "idle" ? "" : "warn");
     $("#consent-btn").disabled = !["consent_pending", "paused"].includes(s.state);

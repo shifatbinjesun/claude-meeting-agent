@@ -177,6 +177,7 @@ class Supervisor:
             "browser_capabilities": getattr(self.browser, "capabilities", {}),
             "approvals": [self._approval_view(a) for a in self.approvals.values() if a.status == "pending"],
             "conversation": self.cfg.section("conversation"),
+            "auto_announce": bool(self.cfg.get("consent.auto_announce", True)),
             "envelope": self._last_envelope,
         }
 
@@ -368,8 +369,10 @@ class Supervisor:
             await self.browser.join_audio()
         await self.browser.open_chat()
         self.state.transition(S.CONSENT_PENDING, "awaiting_disclosure")
-        if not self.cfg.get("consent.require_before_processing", True):
-            await self.grant_consent("config")
+        if self.cfg.get("consent.auto_announce", True) or not self.cfg.get("consent.require_before_processing", True):
+            # The owner approved this join; Claumeet's very first act is the AI disclosure (chat + spoken intro),
+            # before any audio is processed. Opt-outs pause it at any time.
+            await self.grant_consent("auto_announce_on_join")
         else:
             self.emit("owner_hint", {"text": "Claumeet joined muted. Press 'Announce & start' after everyone is "
                                              "informed, or announce it yourself."}, private=True)
@@ -391,18 +394,30 @@ class Supervisor:
         self.brain.audit(by, "consent_disclosed", "allow", "owner_confirmed", self.state.meeting_id)
         if self.live and not any(t.get_name() == "live" for t in self._tasks):
             self.spawn(self.live.run(self.live_in, self._on_live), "live")
-            # Short spoken self-introduction (counts as the voice disclosure).
-            await asyncio.sleep(1.5)
-            await self.live.send_text(
-                "[system event] You just joined and the owner confirmed disclosure. Introduce yourself in one or "
-                f"two short sentences in {persona.intro_language(self.cfg.section('conversation'))}: you are Claumeet, an AI, here with the owner's permission, and anyone "
-                "can ask you to stop listening. Light, friendly.", True)
-            self.arbiter.st.last_addressed = time.time()   # the intro is an invited turn
+            self.spawn(self._spoken_intro(), "intro")
         elif not self.live:
             self.state.transition(S.DEGRADED, "no_live_provider")
             self.emit("degraded", {"reason": self.provider_status})
             self.emit("owner_hint", {"text": self._no_voice_hint()}, private=True)
         return {"ok": True}
+
+    async def _spoken_intro(self, wait_s: float = 25.0) -> bool:
+        """Short spoken self-introduction (the voice disclosure), sent as soon as the voice session is up."""
+        t0 = time.time()
+        while not (self.live and self.live.connected):
+            if time.time() - t0 > wait_s or not self.state.in_meeting or not self.live:
+                self.decision("intro", "fail", "voice_session_not_connected")
+                self.emit("owner_hint", {"text": self._no_voice_hint()}, private=True)
+                return False
+            await asyncio.sleep(0.25)
+        self.arbiter.st.last_addressed = time.time()   # the intro is an invited turn
+        ok = await self.live.send_text(
+            "[system event] You just joined the meeting and the AI notice was posted in chat. Introduce yourself now, "
+            f"out loud, in one or two short sentences in {persona.intro_language(self.cfg.section('conversation'))}: "
+            "you are Claumeet, an AI, here with the owner's permission, and anyone can ask you to stop listening. "
+            "Light and friendly.", True)
+        self.decision("intro", "sent" if ok else "fail", "spoken_intro")
+        return ok
 
     async def leave(self, reason: str, click: bool = True) -> None:
         if self.state.state in (S.ENDED, S.IDLE):

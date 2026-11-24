@@ -50,3 +50,27 @@ async def test_text_retries_busy_then_falls_back_and_reports_reasons(monkeypatch
 
 async def _fast_sleep(_seconds):
     return None
+
+
+async def test_live_send_text_uses_realtime_text_then_falls_back():
+    from claude_agent.providers.gemini_live import GeminiLive
+
+    class Sess:
+        def __init__(self, realtime_ok):
+            self.realtime_ok, self.calls = realtime_ok, []
+
+        async def send_realtime_input(self, text=None, **kw):
+            self.calls.append(("realtime", text))
+            if not self.realtime_ok:
+                raise RuntimeError("unsupported")
+
+        async def send_client_content(self, turns=None, turn_complete=True):
+            self.calls.append(("client_content", turns.parts[0].text))
+
+    live = GeminiLive("k", "m", "sys", "Charon", QuotaGuard(), False, {})
+    assert await live.send_text("hi") is False          # not connected yet: nothing is sent
+    live.session, live.connected = Sess(True), True
+    assert await live.send_text("hello") and live.session.calls == [("realtime", "hello")]
+    live.session, live._client_content_only = Sess(False), False
+    assert await live.send_text("x")
+    assert live.session.calls == [("realtime", "x"), ("client_content", "x")] and live._client_content_only

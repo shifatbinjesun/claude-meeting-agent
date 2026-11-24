@@ -198,3 +198,17 @@ async def test_language_settings_are_validated(sup):
                                     "disclosure_languages": ["hi", "xx", "hi", "es"]})["ok"]
     conv = sup.cfg.section("conversation")
     assert conv["language"] == "hi" and conv["disclosure_languages"] == ["en", "hi", "es"]
+
+
+async def test_intro_reports_when_voice_never_connects(sup):
+    await start_listening(sup)
+    sup.live.connected = False
+    assert await sup._spoken_intro(wait_s=0.3) is False
+    assert any(e["kind"] == "owner_hint" and "speak" in e["data"]["text"] for e in sup.feed)
+    assert sup.live.sent == []
+
+
+async def test_intro_is_sent_once_connected(sup):
+    await start_listening(sup)
+    assert await sup._spoken_intro(wait_s=1) is True
+    assert "Introduce yourself" in sup.live.sent[0]

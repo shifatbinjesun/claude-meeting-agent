@@ -30,7 +30,7 @@ jobs:
       - name: Build ClaumeetSetup.exe
         shell: pwsh
         run: |
-          $ver = "$env:REL_TAG".TrimStart("v"); if (-not ($ver -match '^\d+\.\d+\.\d+$')) { $ver = "0.3.1" }
+          $ver = "$env:REL_TAG".TrimStart("v"); if (-not ($ver -match '^\d+\.\d+\.\d+$')) { $ver = "0.3.2" }
           & $env:ISCC "/DAppVersion=$ver" installer\ClaumeetSetup.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
           $h = (Get-FileHash dist\ClaumeetSetup.exe -Algorithm SHA256).Hash.ToLower()
