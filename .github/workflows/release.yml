@@ -3,8 +3,15 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create, e.g. v0.2.0 (leave empty for a test build)"
+        required: false
+        default: ""
 permissions:
   contents: write
+env:
+  REL_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 jobs:
   build:
     runs-on: windows-latest
@@ -23,7 +30,7 @@ jobs:
       - name: Build ClaumeetSetup.exe
         shell: pwsh
         run: |
-          $ver = "${{ github.ref_name }}".TrimStart("v"); if (-not ($ver -match '^\d+\.\d+\.\d+$')) { $ver = "0.2.0" }
+          $ver = "$env:REL_TAG".TrimStart("v"); if (-not ($ver -match '^\d+\.\d+\.\d+$')) { $ver = "0.2.0" }
           & $env:ISCC "/DAppVersion=$ver" installer\ClaumeetSetup.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
           $h = (Get-FileHash dist\ClaumeetSetup.exe -Algorithm SHA256).Hash.ToLower()
@@ -57,7 +64,7 @@ jobs:
           name: ClaumeetSetup
           path: dist/*
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.event.inputs.tag, 'v')
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
@@ -73,4 +80,4 @@ jobs:
           - Installs per-user only, with pinned and hash-verified libraries. No drivers, no system setting changes, free AI tier only.
           - The installer isn't code-signed (a signing certificate costs money), so Windows SmartScreen may say "Windows protected your PC". Click **More info → Run anyway** only if you downloaded it from this page.
           "@
-          gh release create "${{ github.ref_name }}" dist/ClaumeetSetup.exe dist/ClaumeetSetup.exe.sha256 --title "Claumeet ${{ github.ref_name }}" --notes $notes
+          gh release create "$env:REL_TAG" dist/ClaumeetSetup.exe dist/ClaumeetSetup.exe.sha256 --target "${{ github.sha }}" --title "Claumeet $env:REL_TAG" --notes $notes
