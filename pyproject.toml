@@ -20,6 +20,7 @@ dependencies = [
   "keyring==25.7.0",
   "httpx==0.28.1",
   "python-multipart==0.0.34",
+  "tzdata>=2025.2; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
