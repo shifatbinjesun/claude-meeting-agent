@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Control Center</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<div id="login" class="login hidden">
+  <div class="card login-card">
+    <h1>Claude Control Center</h1>
+    <p class="muted">Open the pairing link shown in the Claude window on this PC, or sign in with your owner passphrase.</p>
+    <form id="login-form">
+      <label for="pass">Owner passphrase</label>
+      <input id="pass" type="password" autocomplete="current-password" minlength="10" required>
+      <button class="btn primary" type="submit">Sign in</button>
+    </form>
+    <p id="login-err" class="err" role="alert"></p>
+  </div>
+</div>
+
+<div id="app" class="layout hidden">
+  <header class="topbar">
+    <div class="brand"><span class="dot" id="state-dot"></span> Claude <span class="muted">Control Center</span></div>
+    <div class="state-pill" id="state-pill" aria-live="polite">idle</div>
+    <button class="btn danger" id="estop" title="Emergency stop (Ctrl+Shift+X)">■ Emergency stop</button>
+  </header>
+  <nav class="sidebar" aria-label="Sections">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="live">Live Meeting</button>
+    <button data-tab="owner">Owner Channel</button>
+    <button data-tab="persona">Personality Studio</button>
+    <button data-tab="memory">Memory &amp; Knowledge</button>
+    <button data-tab="schedule">Scheduling</button>
+    <button data-tab="provider">Provider &amp; Performance</button>
+    <button data-tab="security">Security &amp; Privacy</button>
+  </nav>
+  <main class="content">
+    <!-- OVERVIEW -->
+    <section id="tab-overview" class="tab">
+      <div class="grid">
+        <div class="card">
+          <h2>Join a meeting</h2>
+          <form id="join-form" class="row">
+            <input id="join-url" placeholder="https://meet.google.com/abc-defg-hij" aria-label="Meet link" required>
+            <button class="btn primary" type="submit">Join</button>
+          </form>
+          <p class="muted small">Supervised mode: Claude's browser opens muted with camera off; you click "Ask to join" and the host admits Claude.</p>
+          <div id="hint" class="hint hidden" role="status"></div>
+          <div class="row wrap">
+            <button class="btn" id="consent-btn" disabled>Announce &amp; start listening</button>
+            <button class="btn" data-cmd="mute_output">Mute voice</button>
+            <button class="btn" data-cmd="unmute_output">Unmute voice</button>
+            <button class="btn" data-cmd="pause_processing">Pause listening</button>
+            <button class="btn" data-cmd="resume_processing">Resume listening</button>
+            <button class="btn warn" data-cmd="leave_meeting">Leave meeting</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Status</h2>
+          <dl class="kv" id="ov-kv"></dl>
+          <div class="env" id="envelope" aria-hidden="true"></div>
+        </div>
+        <div class="card">
+          <h2>Consent</h2>
+          <div id="consent-box" class="small"></div>
+        </div>
+        <div class="card">
+          <h2>Approvals waiting for you</h2>
+          <div id="approvals" class="list"><p class="muted">Nothing to approve.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE -->
+    <section id="tab-live" class="tab hidden">
+      <div class="grid">
+        <div class="card span2">
+          <h2>Transcript <span class="muted small">(consent-permitted, in memory only)</span></h2>
+          <div id="transcript" class="scroll list"></div>
+        </div>
+        <div class="card">
+          <h2>Participants</h2>
+          <div id="roster" class="list"></div>
+        </div>
+        <div class="card">
+          <h2>Chat</h2>
+          <div id="chat" class="scroll list"></div>
+        </div>
+        <div class="card">
+          <h2>Questions</h2>
+          <div id="questions" class="scroll list"></div>
+        </div>
+        <div class="card span2">
+          <h2>Decisions <span class="muted small">(reason codes, not hidden reasoning)</span></h2>
+          <div id="decisions" class="scroll list mono small"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OWNER -->
+    <section id="tab-owner" class="tab hidden">
+      <div class="grid">
+        <div class="card span2">
+          <h2>Private channel <span class="badge private">PRIVATE — never spoken</span></h2>
+          <form id="ask-form" class="row">
+            <input id="ask-text" placeholder="Ask Claude privately… (e.g. ওই ভাইটা কী বলল, short summary দে)" aria-label="Private question">
+            <button class="btn" type="submit">Ask privately</button>
+          </form>
+          <div id="owner-replies" class="scroll list"></div>
+        </div>
+        <div class="card">
+          <h2>Speak in the meeting <span class="badge public">PUBLIC</span></h2>
+          <form id="say-form">
+            <textarea id="say-text" rows="3" placeholder="What should Claude say? It rephrases naturally."></textarea>
+            <button class="btn primary" type="submit">Say it</button>
+          </form>
+          <form id="chat-form" class="row">
+            <input id="chat-text" placeholder="Post in Meet chat as Claude">
+            <button class="btn" type="submit">Send chat</button>
+          </form>
+          <button class="btn" data-cmd="screen_capture">Describe shared screen (if enabled)</button>
+          <button class="btn" data-cmd="demo_stop">Stop demo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PERSONA -->
+    <section id="tab-persona" class="tab hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>Mode</h2>
+          <div class="row wrap" id="modes"></div>
+          <h2>Sliders</h2>
+          <form id="persona-form" class="sliders"></form>
+          <div class="row"><button class="btn" id="persona-reset">Restore defaults</button></div>
+        </div>
+        <div class="card">
+          <h2>Voice audition <span class="muted small">(plays here only, never in a meeting)</span></h2>
+          <form id="aud-form">
+            <textarea id="aud-text" rows="3">কী অবস্থা মামা, আজকা আড্ডা জমব নাকি? আমি Claude, একটা AI, কিন্তু আড্ডায় কারো থেকে কম না! 😄</textarea>
+            <button class="btn" type="submit">Play sample</button>
+          </form>
+          <audio id="aud-player" controls class="hidden"></audio>
+          <p id="aud-info" class="muted small"></p>
+        </div>
+        <div class="card">
+          <h2>Pronunciation dictionary</h2>
+          <form id="pron-form" class="row wrap">
+            <input id="pron-term" placeholder="Term (e.g. Rifat)" required>
+            <input id="pron-spoken" placeholder="Say as (e.g. রিফাত)" required>
+            <button class="btn" type="submit">Save</button>
+          </form>
+          <div id="prons" class="list small"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMORY -->
+    <section id="tab-memory" class="tab hidden">
+      <div class="grid">
+        <div class="card span2">
+          <h2>Memory</h2>
+          <div class="row wrap">
+            <select id="mem-domain" aria-label="Domain filter">
+              <option value="">All domains</option><option value="public">Public (shareable)</option>
+              <option value="owner_private">Owner private</option><option value="participant">Participant (consented)</option>
+            </select>
+            <input id="mem-q" placeholder="Search test…">
+            <button class="btn" id="mem-search">Search</button>
+          </div>
+          <div id="mem-list" class="scroll list"></div>
+        </div>
+        <div class="card">
+          <h2>Add knowledge</h2>
+          <form id="mem-form">
+            <select id="mem-new-domain"><option value="owner_private">Owner private</option><option value="public">Public / shareable</option></select>
+            <input id="mem-title" placeholder="Title">
+            <textarea id="mem-body" rows="4" placeholder="Approved fact, link, course info…" required></textarea>
+            <button class="btn" type="submit">Save</button>
+          </form>
+          <h2>Upload document</h2>
+          <form id="doc-form">
+            <input type="file" id="doc-file" accept=".txt,.md,.csv,.json" required>
+            <label class="small"><input type="checkbox" id="doc-share"> Shareable in meetings</label>
+            <button class="btn" type="submit">Upload</button>
+          </form>
+          <p class="muted small">Only .txt .md .csv .json up to 2 MB. Existing in memory ≠ permission to quote publicly.</p>
+          <div id="docs" class="list small"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="tab-schedule" class="tab hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>Approve a meeting</h2>
+          <form id="sched-form">
+            <input id="sched-title" placeholder="Title" required>
+            <input id="sched-url" placeholder="Meet link" required>
+            <input id="sched-start" type="datetime-local" required aria-label="Start time (Asia/Dhaka)">
+            <select id="sched-rec"><option value="none">Once</option><option value="daily">Daily</option>
+              <option value="weekdays">Weekdays (Sun–Thu)</option><option value="weekly">Weekly</option></select>
+            <button class="btn" type="submit">Approve</button>
+          </form>
+          <p class="muted small">Times are Asia/Dhaka. The PC must be on and Claude running; missed windows are never joined late.</p>
+        </div>
+        <div class="card span2">
+          <h2>Approved meetings</h2>
+          <div id="sched-list" class="list"></div>
+          <h2>Missed</h2>
+          <div id="missed" class="list small"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROVIDER -->
+    <section id="tab-provider" class="tab hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>Gemini API key <span class="badge">free tier only</span></h2>
+          <p class="muted small">Create a key in Google AI Studio with billing <b>off</b>. It is validated on this PC and stored in Windows Credential Manager. It is never shown again.</p>
+          <form id="key-form" class="row">
+            <input id="key" type="password" autocomplete="off" placeholder="Paste API key" minlength="20" required>
+            <button class="btn primary" type="submit">Validate &amp; save</button>
+          </form>
+          <div class="row"><button class="btn" id="probe-btn">Probe free models</button><button class="btn warn" id="key-del">Delete key</button></div>
+          <p id="key-msg" class="small"></p>
+        </div>
+        <div class="card span2">
+          <h2>Model registry</h2>
+          <div id="registry" class="list small mono"></div>
+        </div>
+        <div class="card span2">
+          <h2>Performance</h2>
+          <dl class="kv" id="perf"></dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section id="tab-security" class="tab hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>Owner access</h2>
+          <dl class="kv" id="sec-kv"></dl>
+          <form id="pass-form" class="row">
+            <input id="newpass" type="password" minlength="10" placeholder="New owner passphrase (≥10 chars)" autocomplete="new-password">
+            <button class="btn" type="submit">Set passphrase</button>
+          </form>
+          <button class="btn warn" id="revoke">Sign out all devices</button>
+        </div>
+        <div class="card span2">
+          <h2>Audit log</h2>
+          <div id="audit" class="scroll list mono small"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html><body>
+<script>
+// Test fixture (no network): a local WebRTC loopback that imitates a meeting peer sending a 440 Hz tone,
+// plus a "Meet" page side that opens the microphone and measures what it receives.
+window.results = {};
+async function startPeer() {
+  const actx = new AudioContext();
+  const osc = actx.createOscillator(); osc.frequency.value = 440;
+  const g = actx.createGain(); g.gain.value = 0.3; osc.connect(g);
+  const dest = actx.createMediaStreamDestination(); g.connect(dest); osc.start();
+  const a = new RTCPeerConnection(), b = new RTCPeerConnection();   // b is wrapped by the bridge
+  a.onicecandidate = (e) => e.candidate && b.addIceCandidate(e.candidate);
+  b.onicecandidate = (e) => e.candidate && a.addIceCandidate(e.candidate);
+  b.ontrack = (e) => { const el = new Audio(); el.srcObject = e.streams[0] || new MediaStream([e.track]); el.muted = true; el.play().catch(()=>{}); };
+  a.addTrack(dest.stream.getAudioTracks()[0], dest.stream);
+  const off = await a.createOffer(); await a.setLocalDescription(off); await b.setRemoteDescription(off);
+  const ans = await b.createAnswer(); await b.setLocalDescription(ans); await a.setRemoteDescription(ans);
+  window.results.peer = true;
+}
+async function openMic() {
+  const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const actx = new AudioContext(); const src = actx.createMediaStreamSource(s);
+  const an = actx.createAnalyser(); an.fftSize = 2048; src.connect(an);
+  const buf = new Float32Array(an.fftSize);
+  window.micLevel = () => { an.getFloatTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v)); return m; };
+  window.results.mic = s.getAudioTracks()[0].label || "bridge";
+}
+async function tryCamera() {
+  try { await navigator.mediaDevices.getUserMedia({ video: true }); window.results.camera = "opened"; }
+  catch (e) { window.results.camera = e.name; }
+}
+</script>
+</body></html>

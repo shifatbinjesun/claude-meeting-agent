@@ -1,0 +1,56 @@
+# Test report
+
+**Date:** 2026-11-24 · **Where:** cloud Linux container (x86_64, 4 vCPU, 16 GB RAM, Python 3.13.18, Chromium 1243 headless).
+**Not tested on the owner's Windows PC yet.** No real Google Meet, Google account or Gemini key was used.
+
+## Commands
+```
+pytest -q                             # 245 passed in about 26 s
+ruff check src tests --select E,F,W,B # all checks passed
+pip-audit -r requirements-windows.lock --disable-pip --no-deps   # no known vulnerabilities
+python scripts/benchmark.py
+```
+
+## Results by suite
+| Suite | Tests | Result | Kind |
+|---|---|---|---|
+| test_policy (owner verification matrix) | 93 | pass | unit |
+| test_addressing (synthetic Bangla/Banglish/English intents) | 33 | pass | unit, synthetic fixtures |
+| test_url | 17 | pass | unit |
+| test_dashboard (auth, CSRF, origin, host, WS, lockout, traversal, secrets) | 16 | pass | integration (ASGI) |
+| test_memory (ACL, Bangla FTS, revoke, expiry, ingest) | 16 | pass | integration (SQLite) |
+| test_supervisor_gate (consent, mute, interrupt, hold, stop, injection, privacy) | 13 | pass | integration, **mock** Live model and browser |
+| test_arbiter (social timing scenarios) | 11 | pass | scenario replay |
+| test_config_injection | 9 | pass | unit |
+| test_research_ssrf | 8 | pass | unit |
+| test_bridge_e2e (remote capture, mic injection, flush, camera refused) | 5 | pass | **real Chromium + WebRTC loopback** |
+| test_consent, test_quota_registry, test_scheduler | 15 | pass | unit |
+| test_meet_lifecycle_mock (join → admit → consent → newcomer → opt-out → leave; removal; busy) | 3 | pass | real Chromium, **mock Meet page** |
+| test_vad_pcm, test_privacy | 6 | pass | unit |
+
+## Measurements (Linux container, not the target PC)
+| Metric | Value |
+|---|---|
+| In-page flush (bridge.js stop all nodes) | under 1 ms. Silence confirmed within 163 ms, including test polling |
+| Emergency stop through the supervisor (fake browser) | under 250 ms asserted. Typical run is about 1 ms |
+| VAD CPU | 0.40 ms per 1 s of audio (p50) |
+| Resample 24→16 kHz | 0.32 ms per 1 s of audio |
+| Memory search, 10k entries | 4.5 ms p50 / 5.6 ms p95 (English), 7.9 / 10.6 ms (Bangla) |
+| Policy decision | 0.07 ms p50 |
+| Control Center process (idle) | about 73 MB RSS |
+| Headless Chromium + bridge + WebRTC loopback | about 1,040 MB summed RSS across 11 processes (shared pages are counted twice), about 22% of one core |
+| Capture frame rate | 23.5 frames/s (2048 samples at 48 kHz) |
+
+## Blocked (needs the owner) and how to reproduce
+1. **Real Meet join/admission/chat selectors:** Install, SignIn, Start, join a private test meeting, and confirm each state on the Live tab.
+2. **Gemini Live conversation, latency p50/p95, interruption on real audio:** add the key, Probe, run the meeting, and read the Provider & Performance latencies (`end_of_input_to_first_audio_ms`).
+3. **Bangladeshi voice quality:** use Personality Studio → audition voices (Charon, Orus, Puck, Fenrir, Iapetus) and have native listeners score them.
+4. **Bengali ASR intent ≥90%:** this needs 30 or more consented recordings.
+5. **Windows installer and the PowerShell scripts:** not executed. PowerShell wasn't available in the build environment.
+6. **30/60-minute soak, Windows RAM/CPU with real Meet:** watch Overview → App RAM during a long private test.
+
+## Known limitations
+- Speaker attribution in mixed meeting audio is "Meeting audio" (unattributed). Names come only from chat and the roster.
+- If the model says something the privacy filter catches, the transcript filter cuts speech *after* it begins. That's why private memory is never put into the Live context.
+- When a model turn is dropped by the arbiter, the Live model still believes it spoke. This is minor context drift.
+- Meet's DOM changes often. The chat and roster selectors (`data-message-id`, `data-participant-id`) have to be confirmed against live Meet.

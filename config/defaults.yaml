@@ -1,0 +1,73 @@
+# Claude Meet Agent default configuration. Copy keys you want to change into
+# %LOCALAPPDATA%\ClaudeMeetAgent\config.yaml (user overrides). Never put secrets here.
+version: 1
+timezone: Asia/Dhaka
+
+identity:
+  display_name: "Claude (AI)"
+  # Name variants the agent answers to (Bangla + transliterations + common ASR spellings).
+  name_variants: ["claude", "clyde", "cloud", "claud", "klod", "ক্লড", "ক্লাউড", "ক্লোড", "ক্লদ"]
+
+dashboard:
+  host: 127.0.0.1        # loopback only by default. LAN access is opt-in (see docs/SECURITY.md).
+  port: 8765
+  session_minutes: 720
+
+meet:
+  allowed_hosts: ["meet.google.com"]
+  locale: en-US          # pin browser UI locale so text locators are stable
+  join_mode: supervised  # supervised: you click "Ask to join" yourself; assisted: agent clicks it
+  headless: false
+  reconnect_max_attempts: 5
+  reconnect_base_seconds: 2
+  admission_timeout_seconds: 600
+  chat_min_interval_seconds: 8
+  reactions_enabled: true
+
+providers:
+  free_only: true
+  # Ordered by preference. Each must be verified by the probe before use.
+  live_models: ["gemini-3.1-flash-live-preview", "gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.8-live"]
+  text_models: ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash-lite"]
+  tts_models: ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"]
+  voice_name: "Charon"        # warm male prebuilt voice; change after audition
+  proactive_audio: false
+  max_retries: 4
+  experimental_edge_tts: false # unofficial service; leave off unless you accept its terms
+
+conversation:
+  mode: automatic            # automatic | casual | professional | educational | serious | quiet
+  humor: 0.6                 # 0..1
+  initiative: 0.4            # 0..1 how often to speak unprompted
+  energy: 0.6
+  response_sentences: 3
+  min_unsolicited_gap_seconds: 25
+  max_consecutive_turns: 3
+  chat_per_minute: 4
+  greet_newcomers: true
+  greeting_batch_seconds: 20
+
+consent:
+  require_before_processing: true
+  pause_on_new_participant: true
+  announce_on_join: true
+
+memory:
+  retain_raw_audio: false
+  transcript_retention_days: 0   # 0 = keep only rolling in-memory transcript
+  summary_retention_days: 90
+
+research:
+  enabled: true
+  sources: ["wikipedia"]         # free, permitted public API
+  max_fetch_bytes: 500000
+  timeout_seconds: 8
+
+vision:
+  enabled: false                 # turn on per meeting after consent
+  max_fps: 0.5
+
+resources:
+  warn_available_mb: 1500
+  pause_optional_mb: 1000
+  cpu_high_percent: 90

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fake Meet (test fixture)</title></head>
+<body>
+<!-- MOCK of the Meet UI states used by the adapter. It is NOT Google Meet; it exists only so the
+     adapter's state detection, chat and roster logic can be exercised offline. -->
+<div id="prejoin">
+  <input aria-label="Your name">
+  <button aria-label="Turn off microphone" id="mic">mic</button>
+  <button aria-label="Turn off camera">cam</button>
+  <button id="ask">Ask to join</button>
+</div>
+<div id="wait" hidden>Asking to be let in…</div>
+<div id="call" hidden>
+  <div data-participant-id="p1"><span data-self-name="Rifat Hasan">Rifat Hasan</span></div>
+  <button aria-label="Leave call" id="leave">leave</button>
+  <button aria-label="Chat with everyone" id="chatbtn">chat</button>
+  <div id="chatpanel" hidden>
+    <div id="msgs"></div>
+    <textarea aria-label="Send a message to everyone" id="box"></textarea>
+  </div>
+</div>
+<div id="ended" hidden>You left the meeting. Return to home screen</div>
+<script>
+const $ = (s) => document.querySelector(s);
+let n = 0;
+function addMsg(sender, text) {
+  const g = document.createElement("div"); g.setAttribute("data-sender-name", sender);
+  const m = document.createElement("div"); m.setAttribute("data-message-id", "m" + (++n)); m.textContent = text;
+  g.append(m); $("#msgs").append(g);
+}
+$("#mic").onclick = () => { $("#mic").setAttribute("aria-label", "Turn on microphone"); };
+$("#ask").onclick = () => { $("#prejoin").hidden = true; $("#wait").hidden = false;
+  setTimeout(() => { $("#wait").hidden = true; $("#call").hidden = false; }, 1200); };
+$("#chatbtn").onclick = () => { $("#chatpanel").hidden = false; };
+$("#box").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addMsg("You", $("#box").value); $("#box").value = ""; } });
+$("#leave").onclick = () => { $("#call").hidden = true; $("#ended").hidden = false; };
+window.fake = {
+  addMsg,
+  join(id, name) { const d = document.createElement("div"); d.setAttribute("data-participant-id", id);
+    const s = document.createElement("span"); s.setAttribute("data-self-name", name); s.textContent = name; d.append(s);
+    $("#call").prepend(d); },
+  removeMe() { $("#call").hidden = true; document.body.append("You've been removed from the meeting"); },
+};
+</script>
+</body></html>

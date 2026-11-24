@@ -1,0 +1,1 @@
+Hi everyone! I'm Claude, an AI assistant joining with {owner}'s permission. I can listen and reply; what's said here is processed by Google's Gemini service to do that. No recording is kept. If anyone prefers that I don't listen, just say so or type it in chat and I'll stop right away.
